@@ -1,9 +1,18 @@
 # Changelog
 
+## [1.1.0] - 2026-10-07
+
 All notable changes to `human-approval-console-ryan-vo` will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [Unreleased]
+
+### Fixed
+- Proposals past `expires_at` move to `expired`, are written to the audit log, and can no longer be claimed or approved.
+- `MODIFY_AND_APPROVE` scores the edited payload before approval. Analysts cannot approve an edit that exceeds their role, and a matching auto-reject policy blocks approval. The stored risk and signed receipt use the rescored values.
+- The action queue reloads after a review decision and can filter expired proposals.
 
 ## [1.0.0] - 2026-10-07
 

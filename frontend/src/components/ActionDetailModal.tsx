@@ -68,6 +68,7 @@ export const ActionDetailModal: React.FC<ActionDetailModalProps> = ({ action, us
           <div style={{ fontSize: '0.75rem', color: '#9ca3af', textTransform: 'uppercase', fontWeight: 600 }}>Intent & Resource</div>
           <p style={{ background: '#1e293b', padding: '0.5rem', borderRadius: '6px', marginTop: '0.25rem' }}>{action.intent}</p>
           <div style={{ marginTop: '0.25rem', fontSize: '0.8rem' }}>Target: <code>{action.target_resource}</code></div>
+          {action.expires_at && <div style={{ marginTop: '0.25rem', fontSize: '0.75rem', color: '#9ca3af' }}>Proposal deadline: {action.expires_at}</div>}
         </div>
 
         <div style={{ marginBottom: '1rem' }}>
@@ -112,7 +113,9 @@ export const ActionDetailModal: React.FC<ActionDetailModalProps> = ({ action, us
           )}
         </div>
 
-        {['pending', 'under_review'].includes(action.status) ? (
+        {action.status === 'expired' ? (
+          <div style={{ padding: '0.75rem', background: '#1e293b', borderRadius: '8px', color: '#fde68a' }}>This proposal passed its deadline and can no longer be claimed or approved.</div>
+        ) : ['pending', 'under_review'].includes(action.status) ? (
           <div style={{ padding: '0.75rem', background: '#1e293b', borderRadius: '8px' }}>
             <h4 style={{ marginBottom: '0.5rem' }}>Human Review Decision</h4>
             {isCritical && !isAdmin && <div style={{ padding: '0.5rem', background: '#7f1d1d', borderRadius: '4px', color: '#fecaca', marginBottom: '0.5rem', fontSize: '0.8rem' }}>⛔ CRITICAL action requires Admin role to review.</div>}
@@ -124,7 +127,7 @@ export const ActionDetailModal: React.FC<ActionDetailModalProps> = ({ action, us
                 <label><input type="radio" name="d" value="REJECT" checked={decision === 'REJECT'} onChange={() => setDecision('REJECT')} disabled={!canReview} /> Reject</label>
               </div>
               {decision === 'MODIFY_AND_APPROVE' && (
-                <div style={{ marginBottom: '0.5rem' }}><label style={{ fontSize: '0.75rem', color: '#c084fc' }}>Modified Payload JSON</label><textarea className="search-input" style={{ width: '100%', height: '80px', fontFamily: 'monospace' }} value={modifiedPayloadStr} onChange={e => setModifiedPayloadStr(e.target.value)} disabled={!canReview} required /></div>
+                <div style={{ marginBottom: '0.5rem' }}><label style={{ fontSize: '0.75rem', color: '#c084fc' }}>Modified payload. Edits are re-scored before approval.</label><textarea className="search-input" style={{ width: '100%', height: '80px', fontFamily: 'monospace' }} value={modifiedPayloadStr} onChange={e => setModifiedPayloadStr(e.target.value)} disabled={!canReview} required /></div>
               )}
               <div style={{ marginBottom: '0.5rem' }}><label style={{ fontSize: '0.75rem', color: '#9ca3af' }}>Rationale</label><textarea className="search-input" style={{ width: '100%', height: '60px' }} placeholder="Mandatory rationale (min 5 chars)..." value={rationale} onChange={e => setRationale(e.target.value)} disabled={!canReview} required /></div>
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>

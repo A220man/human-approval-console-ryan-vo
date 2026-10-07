@@ -1,6 +1,6 @@
 # human-approval-console-ryan-vo | Ryan Vo | AI & Machine Learning
 
-Current version: `1.0.0`.
+Current version: `1.1.0`.
 
 Autonomous AI agents executing tool calls, database operations, infrastructure scripts, and financial transactions risk triggering irreversible system damage when operating without oversight or relying solely on fragile prompt-based boundaries. **human-approval-console-ryan-vo** is a production-ready human-in-the-loop governance console designed for security engineers, system administrators, and AI platform operators. It ingests proposed agent actions into a persistent queue, scores multi-factor blast radius and reversibility risks, enforces deterministic policy guardrails, provides grounded advisory explanations via provider-agnostic adapters or offline deterministic engines, enforces role-based reviews (`viewer`, `analyst`, `admin`), and generates cryptographically signed (HMAC-SHA256) approval receipts linked into an audit hash-chain.
 
@@ -97,6 +97,7 @@ curl -X POST http://127.0.0.1:8000/api/eval/run \
 
 1. **Autonomous Action Proposal Ingestion (`POST /api/actions`):**
    - Ingests structured action proposals with agent framework metadata, session tags, target resource identifiers, structured payloads, and execution TTLs.
+   - When `expires_in_minutes` elapses, the proposal moves to `expired` and can no longer be claimed or approved.
 2. **Deterministic Multi-Factor Risk Scoring:**
    - Evaluates impact score (0–100), reversibility score (0–100), and resource criticality (0–100).
    - Generates composite risk rating: `low` (<35), `medium` (35–64), `high` (65–84), `critical` (85–100).
@@ -107,6 +108,7 @@ curl -X POST http://127.0.0.1:8000/api/eval/run \
 4. **Role-Based Human-in-the-Loop Review (`viewer`, `analyst`, `admin`):**
    - Strict RBAC: Viewers can audit actions and receipts; Analysts can review low/medium/high proposals; Admins possess sole authority to approve or reject **Critical** risk actions and manage policy rules.
    - Supports `APPROVE`, `REJECT`, and `MODIFY_AND_APPROVE` (sanitizing action parameters prior to execution).
+   - Edited payloads are scored again before approval. The review is refused when the new risk exceeds the reviewer's role or a matching policy is marked auto-reject. The signed receipt stores the rescored risk.
    - Mandatory decision rationale (minimum 5 characters) recorded in audit logs.
 5. **Cryptographic Approval Receipts & Audit Chain:**
    - Every review decision generates an immutable receipt with canonical SHA-256 digests of the effective payload and rationale.
@@ -197,8 +199,8 @@ Services will initialize on local interfaces:
 | `POST` | `/api/actions` | Agent / System | Ingest proposed agent action and calculate risk score |
 | `GET` | `/api/actions` | `viewer`, `analyst`, `admin` | List actions with filtering, search, and queue metrics |
 | `GET` | `/api/actions/{id}` | `viewer`, `analyst`, `admin` | Inspect action details, payload diff, and policy violations |
-| `POST` | `/api/actions/{id}/claim` | `analyst`, `admin` | Lock action into `under_review` state |
-| `POST` | `/api/actions/{id}/review` | `analyst`, `admin`* | Submit `APPROVE`, `REJECT`, or `MODIFY_AND_APPROVE` decision (*Critical requires Admin) |
+| `POST` | `/api/actions/{id}/claim` | `analyst`, `admin` | Lock action into `under_review`. Refuses expired proposals |
+| `POST` | `/api/actions/{id}/review` | `analyst`, `admin`* | Submit `APPROVE`, `REJECT`, or `MODIFY_AND_APPROVE`. Critical risk and escalated edits require Admin. Expired proposals and auto-reject matches are refused |
 | `POST` | `/api/actions/{id}/advisory` | `viewer`, `analyst`, `admin` | Generate grounded LLM advisory assessment |
 | `GET` | `/api/receipts` | `viewer`, `analyst`, `admin` | Query signed audit receipts ledger |
 | `GET` | `/api/receipts/{id}/export` | `viewer`, `analyst`, `admin` | Export receipt in cryptographic Markdown format |
