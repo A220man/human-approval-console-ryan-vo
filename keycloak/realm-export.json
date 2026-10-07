@@ -1,0 +1,100 @@
+{
+  "realm": "approval-console",
+  "enabled": true,
+  "displayName": "AI Agent Human Approval Console",
+  "sslRequired": "external",
+  "registrationAllowed": false,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "resetPasswordAllowed": true,
+  "editUsernameAllowed": false,
+  "roles": {
+    "realm": [
+      {
+        "name": "viewer",
+        "description": "Read-only access to queued agent actions, evaluations, and audit receipts"
+      },
+      {
+        "name": "analyst",
+        "description": "Review actions, submit approvals/rejections, and edit low/medium payloads"
+      },
+      {
+        "name": "admin",
+        "description": "Full administrative authority: approve critical actions, manage policies, sign receipts"
+      }
+    ]
+  },
+  "clients": [
+    {
+      "clientId": "approval-console-client",
+      "name": "Human Approval Console OIDC Client",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false,
+      "secret": "approval-console-local-secret",
+      "redirectUris": [
+        "http://127.0.0.1:8000/api/auth/callback",
+        "http://localhost:8000/api/auth/callback"
+      ],
+      "webOrigins": [
+        "http://127.0.0.1:3000",
+        "http://localhost:3000"
+      ],
+      "attributes": {
+        "pkce.code.challenge.method": "S256",
+        "post.logout.redirect.uris": "http://127.0.0.1:3000"
+      }
+    }
+  ],
+  "users": [
+    {
+      "username": "demo-admin",
+      "enabled": true,
+      "email": "admin@example.local",
+      "firstName": "Admin",
+      "lastName": "Operator",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "AdminPass123!",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["admin", "analyst", "viewer"]
+    },
+    {
+      "username": "demo-analyst",
+      "enabled": true,
+      "email": "analyst@example.local",
+      "firstName": "Security",
+      "lastName": "Analyst",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "AnalystPass123!",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["analyst", "viewer"]
+    },
+    {
+      "username": "demo-viewer",
+      "enabled": true,
+      "email": "viewer@example.local",
+      "firstName": "Audit",
+      "lastName": "Viewer",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "ViewerPass123!",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["viewer"]
+    }
+  ]
+}
