@@ -1,0 +1,32 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+
+# Node / Frontend
+node_modules/
+dist/
+dist-ssr/
+*.local
+.vite/
+
+# Database and secrets
+*.db
+*.sqlite
+*.sqlite3
+.env
+
+# Agent & local IDE metadata
+.antigravitycli/
+.omp/
+.vscode/
+.idea/
+*.swp
+*.swo

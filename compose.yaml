@@ -1,0 +1,72 @@
+services:
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.0
+    command: ["start-dev", "--import-realm"]
+    environment:
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+      KC_HEALTH_ENABLED: "true"
+    volumes:
+      - keycloak_data:/opt/keycloak/data
+      - ./keycloak/realm-export.json:/opt/keycloak/data/import/realm-export.json:ro
+    ports:
+      - "127.0.0.1:8080:8080"
+    healthcheck:
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/8080 && echo -e 'GET /health/ready HTTP/1.1\\r\\nHost: 127.0.0.1\\r\\nConnection: close\\r\\n\\r\\n' >&3 && cat <&3 | grep -q '200 OK' || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 25s
+
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    environment:
+      ENVIRONMENT: development
+      DEMO_MODE: "true"
+      HOST: "0.0.0.0"
+      PORT: "8000"
+      DATABASE_PATH: "/app/data/approval_console.db"
+      OIDC_ISSUER_URL: "http://keycloak:8080/realms/approval-console"
+      OIDC_CLIENT_ID: "approval-console-client"
+      OIDC_CLIENT_SECRET: "approval-console-local-secret"
+      OIDC_REDIRECT_URI: "http://127.0.0.1:8000/api/auth/callback"
+      SECRET_KEY: "change-me-local-dev-secret-key-32chars"
+      RECEIPT_SIGNING_KEY: "change-me-local-dev-signing-key-32chars"
+      LLM_PROVIDER: "openai-compatible"
+      LLM_MODEL: "qwen3.8-27b"
+      LLM_BASE_URL: "https://llm.chris-vo.com/v1"
+    volumes:
+      - backend_data:/app/data
+    ports:
+      - "127.0.0.1:8000:8000"
+    depends_on:
+      keycloak:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    ports:
+      - "127.0.0.1:3000:3000"
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3000/"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+volumes:
+  keycloak_data:
+  backend_data:
