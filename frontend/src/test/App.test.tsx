@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { Navbar } from '../components/Navbar';
 import { ActionQueue } from '../components/ActionQueue';
+import { ActionDetailModal } from '../components/ActionDetailModal';
 import { ActionItem, UserProfile } from '../types/api';
 
 const mockUser: UserProfile = {
@@ -131,5 +132,37 @@ describe('Frontend UI Tests', () => {
     expect(handleSelectAction).toHaveBeenCalledWith(expect.objectContaining({
       id: 'act-test-001'
     }));
+  });
+
+  it('offers an expired status filter in the queue', async () => {
+    render(<ActionQueue user={mockUser} onSelectAction={vi.fn()} />);
+    expect(await screen.findByRole('option', { name: 'Expired' })).toBeInTheDocument();
+    await screen.findByText('act-test-001');
+  });
+
+  it('explains that an expired proposal can no longer be approved', () => {
+    render(
+      <ActionDetailModal
+        action={{ ...mockAction, status: 'expired', expires_at: '2000-01-01T00:00:00+00:00' }}
+        user={mockUser}
+        onClose={vi.fn()}
+        onActionUpdated={vi.fn()}
+      />
+    );
+    expect(screen.getByText(/Proposal deadline:/)).toBeInTheDocument();
+    expect(screen.getByText(/can no longer be claimed or approved/)).toBeInTheDocument();
+  });
+
+  it('warns that an edited payload is re-scored before approval', () => {
+    render(
+      <ActionDetailModal
+        action={mockAction}
+        user={mockUser}
+        onClose={vi.fn()}
+        onActionUpdated={vi.fn()}
+      />
+    );
+    fireEvent.click(screen.getByText('Modify & Approve'));
+    expect(screen.getByText(/Edits are re-scored before approval/)).toBeInTheDocument();
   });
 });

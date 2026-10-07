@@ -91,6 +91,154 @@ def test_reject_action_with_mandatory_rationale(admin_client):
     assert data["status"] == "rejected"
 
 
+def test_expired_proposal_cannot_be_claimed_or_approved(analyst_client):
+    """Verifies that a proposal past its TTL is closed and cannot be claimed or approved."""
+    created = analyst_client.post("/api/actions", json={
+        "agent_id": "cache-agent",
+        "session_id": "sess-ttl-01",
+        "action_type": "shell_command",
+        "target_resource": "dev-worker",
+        "payload": {"command": "echo cache-flush"},
+        "intent": "Flush a local cache on a development worker",
+        "expires_in_minutes": 30
+    })
+    assert created.status_code == 201
+    action_id = created.json()["id"]
+
+    from app.core.database import get_connection
+    conn = get_connection()
+    conn.execute("UPDATE actions SET expires_at = ? WHERE id = ?", ("2000-01-01T00:00:00+00:00", action_id))
+    conn.commit()
+
+    listed = analyst_client.get("/api/actions?status=expired")
+    assert listed.status_code == 200
+    assert any(item["id"] == action_id for item in listed.json()["items"])
+
+    claim = analyst_client.post(f"/api/actions/{action_id}/claim", json={})
+    assert claim.status_code == 409
+    review = analyst_client.post(f"/api/actions/{action_id}/review", json={
+        "decision": "APPROVE",
+        "rationale": "Too late to approve this proposal."
+    })
+    assert review.status_code == 409
+
+    audit = get_connection().execute(
+        "SELECT event_type FROM audit_logs WHERE action_id = ? AND event_type = 'ACTION_EXPIRED'",
+        (action_id,)
+    ).fetchone()
+    assert audit is not None
+
+
+def test_modify_cannot_escalate_beyond_reviewer_role(analyst_client):
+    """Verifies an analyst cannot approve an edit that the risk engine rescores as admin-only."""
+    created = analyst_client.post("/api/actions", json={
+        "agent_id": "sql-optimizer-bot",
+        "session_id": "sess-esc-01",
+        "action_type": "database_query",
+        "target_resource": "staging-db",
+        "payload": {"sql": "SELECT id FROM accounts LIMIT 20;"},
+        "intent": "Sample recent account identifiers"
+    })
+    action_id = created.json()["id"]
+    resp = analyst_client.post(f"/api/actions/{action_id}/review", json={
+        "decision": "MODIFY_AND_APPROVE",
+        "rationale": "Rewriting the query before approval.",
+        "modified_payload": {"sql": "DROP DATABASE accounts;"}
+    })
+    assert resp.status_code == 403
+    assert "requires admin" in resp.json()["detail"]
+    detail = analyst_client.get(f"/api/actions/{action_id}").json()
+    assert detail["status"] == "pending"
+    assert detail["modified_payload"] is None
+
+
+def test_admin_modify_records_rescored_risk_on_receipt(admin_client):
+    """Verifies an admin edit stores the rescored risk and the receipt still verifies."""
+    created = admin_client.post("/api/actions", json={
+        "agent_id": "sql-optimizer-bot",
+        "session_id": "sess-esc-02",
+        "action_type": "database_query",
+        "target_resource": "staging-db",
+        "payload": {"sql": "SELECT id FROM accounts LIMIT 20;"},
+        "intent": "Sample recent account identifiers"
+    })
+    action_id = created.json()["id"]
+    resp = admin_client.post(f"/api/actions/{action_id}/review", json={
+        "decision": "MODIFY_AND_APPROVE",
+        "rationale": "Emergency schema removal approved by the administrator.",
+        "modified_payload": {"sql": "DROP DATABASE accounts;"}
+    })
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["status"] == "modified_and_approved"
+    assert body["risk_level"] == "critical"
+    detail = admin_client.get(f"/api/actions/{action_id}").json()
+    assert detail["risk_level"] == "critical"
+    assert detail["risk_score"] == body["risk_score"]
+    verify = admin_client.post("/api/receipts/verify", json={"receipt_id": body["receipt"]["receipt_id"]})
+    assert verify.status_code == 200
+    assert verify.json()["is_valid"] is True
+
+
+def test_auto_reject_policy_blocks_approval(client):
+    """Verifies a matching auto-reject policy prevents approval of the original payload."""
+    client.post("/api/auth/demo-login", json={"role": "admin"})
+    token = client.get("/api/auth/csrf").json()["csrf_token"]
+    client.headers.update({"x-csrf-token": token})
+    created_policy = client.post("/api/policies", json={
+        "name": "Auto Reject Marker",
+        "description": "Blocks commands that include the lab marker",
+        "action_type": "shell_command",
+        "rule_pattern": "AUTO_REJECT_MARKER",
+        "severity": "high",
+        "required_role": "analyst",
+        "auto_reject": True,
+        "enabled": True
+    })
+    assert created_policy.status_code == 201
+
+    client.post("/api/auth/demo-login", json={"role": "analyst"})
+    token = client.get("/api/auth/csrf").json()["csrf_token"]
+    client.headers.update({"x-csrf-token": token})
+    created = client.post("/api/actions", json={
+        "agent_id": "lab-agent",
+        "session_id": "sess-rej-01",
+        "action_type": "shell_command",
+        "target_resource": "dev-sandbox-worker",
+        "payload": {"command": "echo AUTO_REJECT_MARKER"},
+        "intent": "Run a labeled command that policy must refuse"
+    })
+    assert created.status_code == 201
+    action_id = created.json()["id"]
+    resp = client.post(f"/api/actions/{action_id}/review", json={
+        "decision": "APPROVE",
+        "rationale": "Attempting to approve a blocked command."
+    })
+    assert resp.status_code == 400
+    assert "auto-reject" in resp.json()["detail"]
+    assert client.get(f"/api/actions/{action_id}").json()["status"] == "pending"
+
+
+def test_modify_rejects_unscorable_payload(analyst_client):
+    """Verifies a non-numeric financial edit is rejected instead of failing the request."""
+    created = analyst_client.post("/api/actions", json={
+        "agent_id": "treasury-bot",
+        "session_id": "sess-amt-01",
+        "action_type": "financial_transaction",
+        "target_resource": "treasury",
+        "payload": {"amount": 25},
+        "intent": "Reimburse a small office expense"
+    })
+    action_id = created.json()["id"]
+    resp = analyst_client.post(f"/api/actions/{action_id}/review", json={
+        "decision": "MODIFY_AND_APPROVE",
+        "rationale": "Adjusting the transfer amount before approval.",
+        "modified_payload": {"amount": "not-a-number"}
+    })
+    assert resp.status_code == 400
+    assert analyst_client.get(f"/api/actions/{action_id}").json()["status"] == "pending"
+
+
 def test_filter_and_search_actions(analyst_client):
     """Verifies queue listing filtering by status and search terms."""
     resp = analyst_client.get("/api/actions?status=pending&limit=10")

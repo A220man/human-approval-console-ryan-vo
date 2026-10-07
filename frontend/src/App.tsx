@@ -13,6 +13,7 @@ export const App: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<'queue' | 'receipts' | 'policies' | 'benchmark'>('queue');
   const [selectedAction, setSelectedAction] = useState<ActionItem | null>(null);
+  const [queueVersion, setQueueVersion] = useState(0);
 
   const init = async () => {
     try {
@@ -56,13 +57,13 @@ export const App: React.FC = () => {
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
       <Navbar user={user} activeTab={tab} onSelectTab={setTab} onSwitchRole={switchRole} onLogout={logout} />
       <main className="container" style={{ flexGrow: 1 }}>
-        {tab === 'queue' && <ActionQueue user={user} onSelectAction={setSelectedAction} />}
+        {tab === 'queue' && <ActionQueue user={user} refreshKey={queueVersion} onSelectAction={setSelectedAction} />}
         {tab === 'receipts' && <ReceiptsView />}
         {tab === 'policies' && <PolicyManager user={user} />}
         {tab === 'benchmark' && <EvaluationDashboard />}
       </main>
       {selectedAction && (
-        <ActionDetailModal action={selectedAction} user={user} onClose={() => setSelectedAction(null)} onActionUpdated={() => setSelectedAction(null)} />
+        <ActionDetailModal action={selectedAction} user={user} onClose={() => setSelectedAction(null)} onActionUpdated={() => { setSelectedAction(null); setQueueVersion(v => v + 1); }} />
       )}
     </div>
   );

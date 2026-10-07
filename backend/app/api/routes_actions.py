@@ -12,6 +12,20 @@ from app.services.risk_engine import RiskEngine
 
 router = APIRouter(prefix="/api/actions", tags=["Actions"])
 
+def sweep_expired_actions() -> None:
+    now_iso = datetime.now(timezone.utc).isoformat()
+    due = get_connection().execute(
+        "SELECT id FROM actions WHERE status IN ('pending', 'under_review') AND expires_at IS NOT NULL AND expires_at <= ?",
+        (now_iso,),
+    ).fetchall()
+    if not due:
+        return
+    with db_transaction() as cur:
+        for row in due:
+            cur.execute("UPDATE actions SET status = 'expired' WHERE id = ? AND status IN ('pending', 'under_review')", (row["id"],))
+            cur.execute("INSERT INTO audit_logs VALUES (?, ?, ?, ?, ?, ?, ?)", (
+                f"aud-{uuid.uuid4().hex[:12]}", row["id"], "system", "system", "ACTION_EXPIRED", '{"reason":"ttl"}', now_iso))
+
 @router.post("", response_model=ActionResponse, status_code=status.HTTP_201_CREATED)
 def ingest_action(req: ActionIngestRequest, csrf: None = Depends(verify_csrf)) -> ActionResponse:
     action_id = f"act-{uuid.uuid4().hex[:10]}"
@@ -48,6 +62,7 @@ def list_actions(
     offset: int = Query(0, ge=0),
     user: UserProfile = Depends(require_role(["viewer", "analyst", "admin"]))
 ) -> Dict[str, Any]:
+    sweep_expired_actions()
     conn = get_connection()
     q = "SELECT * FROM actions WHERE 1=1"
     params: List[Any] = []
@@ -92,6 +107,7 @@ def list_actions(
 
 @router.get("/{action_id}", response_model=ActionResponse)
 def get_action_detail(action_id: str, user: UserProfile = Depends(require_role(["viewer", "analyst", "admin"]))) -> ActionResponse:
+    sweep_expired_actions()
     row = get_connection().execute("SELECT * FROM actions WHERE id = ?", (action_id,)).fetchone()
     if not row: raise HTTPException(status_code=404, detail="Action not found.")
     payload = json.loads(row["payload_json"])
@@ -108,8 +124,10 @@ def get_action_detail(action_id: str, user: UserProfile = Depends(require_role([
 
 @router.post("/{action_id}/claim", response_model=ActionResponse)
 def claim_action(action_id: str, req: ActionClaimRequest = ActionClaimRequest(), user: UserProfile = Depends(require_role(["analyst", "admin"])), csrf: None = Depends(verify_csrf)) -> ActionResponse:
+    sweep_expired_actions()
     row = get_connection().execute("SELECT * FROM actions WHERE id = ?", (action_id,)).fetchone()
     if not row: raise HTTPException(status_code=404, detail="Action not found.")
+    if row["status"] == "expired": raise HTTPException(status_code=409, detail="Action expired and can no longer be claimed.")
     if row["status"] not in ("pending", "under_review"): raise HTTPException(status_code=400, detail="Action already processed.")
 
     role = "admin" if "admin" in user.roles else "analyst"

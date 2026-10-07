@@ -22,6 +22,7 @@ body{background:var(--bg-main);color:var(--text-main);font-family:system-ui,-app
 .badge-approved{background:#065f46;color:#a7f3d0}
 .badge-rejected{background:#991b1b;color:#fecaca}
 .badge-modified_and_approved{background:#581c87;color:#e9d5ff}
+.badge-expired{background:#334155;color:#cbd5e1}
 .filter-bar{display:flex;flex-wrap:wrap;gap:.75rem;margin-bottom:1.25rem;align-items:center}
 .search-input,.select-input{background:#1e293b;border:1px solid var(--border-color);color:#fff;padding:.5rem .85rem;border-radius:6px;font-size:.875rem}
 .search-input{flex-grow:1;min-width:240px}

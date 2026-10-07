@@ -4,10 +4,11 @@ import { api } from '../services/apiClient';
 
 interface ActionQueueProps {
   user: UserProfile;
+  refreshKey?: number;
   onSelectAction: (action: ActionItem) => void;
 }
 
-export const ActionQueue: React.FC<ActionQueueProps> = ({ user, onSelectAction }) => {
+export const ActionQueue: React.FC<ActionQueueProps> = ({ user, refreshKey = 0, onSelectAction }) => {
   const [actions, setActions] = useState<ActionItem[]>([]);
   const [stats, setStats] = useState<QueueStats>({ pending: 0, under_review: 0, approved: 0, rejected: 0, critical_pending: 0 });
   const [loading, setLoading] = useState(true);
@@ -35,7 +36,7 @@ export const ActionQueue: React.FC<ActionQueueProps> = ({ user, onSelectAction }
     finally { setLoading(false); }
   };
 
-  useEffect(() => { loadData(); }, [statusFilter, riskFilter, typeFilter, searchTerm]);
+  useEffect(() => { loadData(); }, [statusFilter, riskFilter, typeFilter, searchTerm, refreshKey]);
 
   const handleClaim = async (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
@@ -78,6 +79,7 @@ export const ActionQueue: React.FC<ActionQueueProps> = ({ user, onSelectAction }
           <option value="approved">Approved</option>
           <option value="rejected">Rejected</option>
           <option value="modified_and_approved">Modified & Approved</option>
+          <option value="expired">Expired</option>
         </select>
         <select className="select-input" value={riskFilter} onChange={e => setRiskFilter(e.target.value)}>
           <option value="">All Risk Tiers</option>
@@ -118,7 +120,10 @@ export const ActionQueue: React.FC<ActionQueueProps> = ({ user, onSelectAction }
                   <td><code style={{ fontSize: '0.8rem' }}>{act.target_resource}</code></td>
                   <td><div style={{ maxWidth: '300px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{act.intent}</div></td>
                   <td><span className={`badge badge-${act.risk_level}`}>{act.risk_score} • {act.risk_level}</span></td>
-                  <td><span className={`badge badge-${act.status}`}>{act.status.replace(/_/g, ' ')}</span></td>
+                  <td>
+                    <span className={`badge badge-${act.status}`}>{act.status.replace(/_/g, ' ')}</span>
+                    {act.expires_at && act.status !== 'expired' && <div style={{ fontSize: '0.7rem', color: '#9ca3af', marginTop: '0.2rem' }}>due {act.expires_at.slice(0, 16).replace('T', ' ')}</div>}
+                  </td>
                   <td>
                     <div style={{ display: 'flex', gap: '0.35rem' }}>
                       {act.status === 'pending' && canClaim && (

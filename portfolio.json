@@ -7,7 +7,7 @@
   "summary": "Automated multi-factor risk scoring, role-based human-in-the-loop review, and cryptographically signed audit receipts for autonomous agent action proposals.",
   "workflows": [
     "Queue and inspect proposed autonomous agent actions with automated blast-radius analysis and deterministic policy enforcement",
-    "Conduct role-based review with mandatory decision rationale, payload parameter modification, and grounded LLM advisory explanations",
+    "Conduct role-based review with mandatory decision rationale, payload edits that are re-scored before approval, and grounded LLM advisory explanations",
     "Generate, verify, and export tamper-evident SHA-256 HMAC-signed approval receipts forming a verifiable audit chain"
   ],
   "auth": "oidc-keycloak-saml-broker",
