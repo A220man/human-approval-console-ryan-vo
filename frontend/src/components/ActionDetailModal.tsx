@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ActionItem, AdvisoryResponse, UserProfile } from '../types/api';
+import { ActionItem, AdvisoryResponse, ReceiptVerifyResult, UserProfile } from '../types/api';
 import { api } from '../services/apiClient';
 
 interface ActionDetailModalProps {
@@ -20,6 +20,8 @@ export const ActionDetailModal: React.FC<ActionDetailModalProps> = ({ action, us
     JSON.stringify(action.modified_payload || action.payload, null, 2)
   );
   const [submitting, setSubmitting] = useState(false);
+  const [receiptAudit, setReceiptAudit] = useState<ReceiptVerifyResult | null>(null);
+  const [verifyingReceipt, setVerifyingReceipt] = useState(false);
 
   const isAdmin = user.roles.includes('admin');
   const isAnalyst = user.roles.includes('analyst') || isAdmin;
@@ -47,6 +49,16 @@ export const ActionDetailModal: React.FC<ActionDetailModalProps> = ({ action, us
       onActionUpdated(); onClose();
     } catch (err: any) { alert(err.message || 'Review failed'); }
     finally { setSubmitting(false); }
+  };
+
+  const handleVerifyReceiptInline = async () => {
+    if (!action.receipt_id) return;
+    try {
+      setVerifyingReceipt(true);
+      const res = await api.verifyReceipt(action.receipt_id);
+      setReceiptAudit(res);
+    } catch (err: any) { alert(err.message || 'Receipt verification failed'); }
+    finally { setVerifyingReceipt(false); }
   };
 
   return (
@@ -140,6 +152,17 @@ export const ActionDetailModal: React.FC<ActionDetailModalProps> = ({ action, us
           <div style={{ padding: '0.75rem', background: '#1e293b', borderRadius: '8px' }}>
             <div style={{ fontSize: '0.8rem', color: '#9ca3af' }}>Reviewed by: <strong>{action.reviewer_id}</strong> ({action.reviewer_role}) at {action.reviewed_at}</div>
             <p style={{ marginTop: '0.25rem' }}><strong>Rationale:</strong> {action.rationale}</p>
+            {action.receipt_id && (
+              <div style={{ marginTop: '0.5rem', paddingTop: '0.5rem', borderTop: '1px solid #374151', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div><span style={{ fontSize: '0.75rem', color: '#9ca3af' }}>Receipt: </span><code style={{ fontSize: '0.8rem', color: '#38bdf8' }}>{action.receipt_id}</code></div>
+                <button type="button" className="btn btn-secondary" style={{ padding: '0.2rem 0.5rem', fontSize: '0.75rem' }} onClick={handleVerifyReceiptInline} disabled={verifyingReceipt}>{verifyingReceipt ? 'Verifying...' : 'Verify Receipt'}</button>
+              </div>
+            )}
+            {receiptAudit && (
+              <div style={{ marginTop: '0.5rem', padding: '0.4rem 0.6rem', background: receiptAudit.is_valid ? '#064e3b' : '#7f1d1d', borderRadius: '4px', fontSize: '0.75rem', color: '#fff' }}>
+                {receiptAudit.is_valid ? '✓ HMAC Signature & Hash Chain Verified' : '✗ Verification Failed'} ({receiptAudit.details})
+              </div>
+            )}
           </div>
         )}
       </div>

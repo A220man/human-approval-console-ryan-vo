@@ -52,6 +52,17 @@ def ingest_action(req: ActionIngestRequest, csrf: None = Depends(verify_csrf)) -
         status="pending", created_at=now_iso, expires_at=expires_at, violations=risk_eval.violations
     )
 
+def _row_to_action(r: Any, violations: Optional[List[Any]] = None, receipt_id: Optional[str] = None) -> ActionResponse:
+    return ActionResponse(
+        id=r["id"], agent_id=r["agent_id"], agent_framework=r["agent_framework"], session_id=r["session_id"],
+        action_type=r["action_type"], target_resource=r["target_resource"], payload=json.loads(r["payload_json"]),
+        intent=r["intent"], context_metadata=json.loads(r["context_metadata_json"]) if r["context_metadata_json"] else None,
+        risk_score=r["risk_score"], risk_level=r["risk_level"], status=r["status"], reviewer_id=r["reviewer_id"],
+        reviewer_role=r["reviewer_role"], reviewed_at=r["reviewed_at"], rationale=r["rationale"],
+        modified_payload=json.loads(r["modified_payload_json"]) if r["modified_payload_json"] else None,
+        created_at=r["created_at"], expires_at=r["expires_at"], violations=violations, receipt_id=receipt_id
+    )
+
 @router.get("", response_model=Dict[str, Any])
 def list_actions(
     status_filter: Optional[str] = Query(None, alias="status"),
@@ -78,17 +89,7 @@ def list_actions(
     params.extend([limit, offset])
 
     rows = conn.execute(q, params).fetchall()
-    actions = [
-        ActionResponse(
-            id=r["id"], agent_id=r["agent_id"], agent_framework=r["agent_framework"], session_id=r["session_id"],
-            action_type=r["action_type"], target_resource=r["target_resource"], payload=json.loads(r["payload_json"]),
-            intent=r["intent"], context_metadata=json.loads(r["context_metadata_json"]) if r["context_metadata_json"] else None,
-            risk_score=r["risk_score"], risk_level=r["risk_level"], status=r["status"], reviewer_id=r["reviewer_id"],
-            reviewer_role=r["reviewer_role"], reviewed_at=r["reviewed_at"], rationale=r["rationale"],
-            modified_payload=json.loads(r["modified_payload_json"]) if r["modified_payload_json"] else None,
-            created_at=r["created_at"], expires_at=r["expires_at"]
-        ) for r in rows
-    ]
+    actions = [_row_to_action(r) for r in rows]
 
     stats_row = conn.execute("""
         SELECT COUNT(CASE WHEN status = 'pending' THEN 1 END) AS pending,
@@ -108,19 +109,14 @@ def list_actions(
 @router.get("/{action_id}", response_model=ActionResponse)
 def get_action_detail(action_id: str, user: UserProfile = Depends(require_role(["viewer", "analyst", "admin"]))) -> ActionResponse:
     sweep_expired_actions()
-    row = get_connection().execute("SELECT * FROM actions WHERE id = ?", (action_id,)).fetchone()
+    conn = get_connection()
+    row = conn.execute("SELECT * FROM actions WHERE id = ?", (action_id,)).fetchone()
     if not row: raise HTTPException(status_code=404, detail="Action not found.")
     payload = json.loads(row["payload_json"])
     violations, _, _ = PolicyEngine.evaluate(row["action_type"], row["target_resource"], payload)
-    return ActionResponse(
-        id=row["id"], agent_id=row["agent_id"], agent_framework=row["agent_framework"], session_id=row["session_id"],
-        action_type=row["action_type"], target_resource=row["target_resource"], payload=payload, intent=row["intent"],
-        context_metadata=json.loads(row["context_metadata_json"]) if row["context_metadata_json"] else None,
-        risk_score=row["risk_score"], risk_level=row["risk_level"], status=row["status"], reviewer_id=row["reviewer_id"],
-        reviewer_role=row["reviewer_role"], reviewed_at=row["reviewed_at"], rationale=row["rationale"],
-        modified_payload=json.loads(row["modified_payload_json"]) if row["modified_payload_json"] else None,
-        created_at=row["created_at"], expires_at=row["expires_at"], violations=violations
-    )
+    rcpt_row = conn.execute("SELECT id FROM receipts WHERE action_id = ?", (action_id,)).fetchone()
+    receipt_id = rcpt_row["id"] if rcpt_row else None
+    return _row_to_action(row, violations=violations, receipt_id=receipt_id)
 
 @router.post("/{action_id}/claim", response_model=ActionResponse)
 def claim_action(action_id: str, req: ActionClaimRequest = ActionClaimRequest(), user: UserProfile = Depends(require_role(["analyst", "admin"])), csrf: None = Depends(verify_csrf)) -> ActionResponse:

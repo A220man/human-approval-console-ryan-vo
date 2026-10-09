@@ -1,5 +1,7 @@
 # Changelog
 
+## [1.2.0] - 2026-10-09
+
 ## [1.1.0] - 2026-10-07
 
 All notable changes to `human-approval-console-ryan-vo` will be documented in this file.

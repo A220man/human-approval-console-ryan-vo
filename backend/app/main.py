@@ -27,7 +27,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 app = FastAPI(
     title="AI Agent Human Approval Console",
     description="Role-based review, multi-factor risk scoring, and cryptographic receipts for autonomous agent actions.",
-    version="1.0.0",
+    version="1.2.0",
     lifespan=lifespan
 )
 

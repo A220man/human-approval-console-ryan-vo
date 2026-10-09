@@ -101,23 +101,21 @@ def seed_sample_actions() -> None:
     if conn.execute("SELECT COUNT(*) FROM actions").fetchone()[0] > 0:
         return
     now = datetime.now(timezone.utc).isoformat()
-    samples = [
+    raw = [
         ("act-demo-001", "infra-agent-v3", "langchain", "sess-9481", "shell_command", "prod-worker-04",
-         json.dumps({"command": "rm -rf /var/log/app/* && systemctl restart celery-worker"}),
-         "Clear stale log files to recover disk space on worker node", json.dumps({"disk_usage": "98%"}),
-         88, "high", "pending", None, None, None, None, None, now, None),
+         {"command": "rm -rf /var/log/app/* && systemctl restart celery-worker"},
+         "Clear stale log files to recover disk space on worker node", {"disk_usage": "98%"}, 88, "high"),
         ("act-demo-002", "db-migration-bot", "autogen", "sess-1029", "database_query", "postgres-staging-users",
-         json.dumps({"sql": "ALTER TABLE users ADD COLUMN phone_verified BOOLEAN DEFAULT FALSE;"}),
-         "Add phone verification tracking column to staging user schema", json.dumps({"environment": "staging"}),
-         25, "low", "pending", None, None, None, None, None, now, None),
+         {"sql": "ALTER TABLE users ADD COLUMN phone_verified BOOLEAN DEFAULT FALSE;"},
+         "Add phone verification tracking column to staging user schema", {"environment": "staging"}, 25, "low"),
         ("act-demo-003", "secops-agent", "crewai", "sess-5512", "privilege_escalation", "aws-iam-role-pipeline",
-         json.dumps({"policy_name": "S3Sync", "statement": {"Effect": "Allow", "Action": ["s3:GetObject"], "Resource": "arn:aws:s3:::archive/*"}}),
-         "Grant read-only access to analytics bucket for disaster recovery", json.dumps({"ttl_hours": 4}),
-         45, "medium", "pending", None, None, None, None, None, now, None),
+         {"policy_name": "S3Sync", "statement": {"Effect": "Allow", "Action": ["s3:GetObject"], "Resource": "arn:aws:s3:::archive/*"}},
+         "Grant read-only access to analytics bucket for disaster recovery", {"ttl_hours": 4}, 45, "medium"),
         ("act-demo-004", "incident-responder", "langchain", "sess-8833", "shell_command", "prod-db-cluster-01",
-         json.dumps({"command": "DROP DATABASE legacy_analytics_archive;"}),
-         "Drop deprecated database during emergency storage cleanup", json.dumps({"free_space_mb": 120}),
-         98, "critical", "pending", None, None, None, None, None, now, None)
+         {"command": "DROP DATABASE legacy_analytics_archive;"},
+         "Drop deprecated database during emergency storage cleanup", {"free_space_mb": 120}, 98, "critical")
     ]
+    samples = [(i, a, f, s, t, r, json.dumps(p), it, json.dumps(c), sc, lvl, "pending", None, None, None, None, None, now, None)
+               for i, a, f, s, t, r, p, it, c, sc, lvl in raw]
     with conn:
         conn.executemany("INSERT INTO actions VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", samples)

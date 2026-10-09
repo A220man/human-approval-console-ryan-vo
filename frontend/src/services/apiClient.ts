@@ -1,6 +1,6 @@
 import {
   ActionItem, ActionListResponse, AdvisoryResponse,
-  BenchmarkAction, EvaluationMetrics, PolicyItem,
+  BenchmarkAction, ChainVerifyResult, EvaluationMetrics, PolicyItem,
   ReceiptItem, ReceiptVerifyResult, UserProfile
 } from '../types/api';
 
@@ -60,9 +60,13 @@ class ApiClient {
   reviewAction = (id: string, body: any) => this.request<any>(`/api/actions/${id}/review`, { method: 'POST', body: JSON.stringify(body) });
   getAdvisory = (id: string) => this.request<AdvisoryResponse>(`/api/actions/${id}/advisory`, { method: 'POST' });
 
-  getReceipts = (limit = 50, offset = 0) => this.request<{ total: number; items: ReceiptItem[] }>(`/api/receipts?limit=${limit}&offset=${offset}`);
+  getReceipts = (p: Record<string, any> = {}) => {
+    const qs = new URLSearchParams(Object.entries(p).filter(([_, v]) => v !== undefined && v !== '').map(([k, v]) => [k, String(v)])).toString();
+    return this.request<{ total: number; limit: number; offset: number; items: ReceiptItem[] }>(`/api/receipts${qs ? `?${qs}` : ''}`);
+  };
   exportReceiptMarkdown = async (id: string) => (await fetch(`/api/receipts/${id}/export`, { credentials: 'include' })).text();
   verifyReceipt = (receipt_id: string) => this.request<ReceiptVerifyResult>('/api/receipts/verify', { method: 'POST', body: JSON.stringify({ receipt_id }) });
+  verifyChain = () => this.request<ChainVerifyResult>('/api/receipts/verify-chain', { method: 'POST' });
 
   getPolicies = () => this.request<PolicyItem[]>('/api/policies');
   createPolicy = (body: any) => this.request<PolicyItem>('/api/policies', { method: 'POST', body: JSON.stringify(body) });
