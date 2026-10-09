@@ -100,6 +100,7 @@ class ActionResponse(BaseModel):
     created_at: str
     expires_at: Optional[str] = None
     violations: Optional[List[PolicyViolation]] = None
+    receipt_id: Optional[str] = None
 
 class ActionClaimRequest(BaseModel):
     notes: Optional[str] = None
@@ -134,6 +135,15 @@ class ReceiptVerifyResult(BaseModel):
     payload_hash_matches: bool
     rationale_hash_matches: bool
     chain_link_intact: bool
+    details: str
+
+class ChainVerifyResult(BaseModel):
+    is_valid: bool
+    total_receipts: int
+    verified_count: int
+    genesis_hash: str
+    head_receipt_hash: Optional[str] = None
+    broken_at_receipt_id: Optional[str] = None
     details: str
 
 class BenchmarkAction(BaseModel):

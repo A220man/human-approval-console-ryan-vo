@@ -35,6 +35,7 @@ export interface ActionItem {
   created_at: string;
   expires_at?: string;
   violations?: PolicyViolation[];
+  receipt_id?: string;
 }
 
 export interface QueueStats {
@@ -76,6 +77,16 @@ export interface ReceiptVerifyResult {
   payload_hash_matches: boolean;
   rationale_hash_matches: boolean;
   chain_link_intact: boolean;
+  details: string;
+}
+
+export interface ChainVerifyResult {
+  is_valid: boolean;
+  total_receipts: number;
+  verified_count: number;
+  genesis_hash: string;
+  head_receipt_hash?: string | null;
+  broken_at_receipt_id?: string | null;
   details: string;
 }
 

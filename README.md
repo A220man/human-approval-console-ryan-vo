@@ -202,8 +202,9 @@ Services will initialize on local interfaces:
 | `POST` | `/api/actions/{id}/claim` | `analyst`, `admin` | Lock action into `under_review`. Refuses expired proposals |
 | `POST` | `/api/actions/{id}/review` | `analyst`, `admin`* | Submit `APPROVE`, `REJECT`, or `MODIFY_AND_APPROVE`. Critical risk and escalated edits require Admin. Expired proposals and auto-reject matches are refused |
 | `POST` | `/api/actions/{id}/advisory` | `viewer`, `analyst`, `admin` | Generate grounded LLM advisory assessment |
-| `GET` | `/api/receipts` | `viewer`, `analyst`, `admin` | Query signed audit receipts ledger |
+| `GET` | `/api/receipts` | `viewer`, `analyst`, `admin` | Query receipts with `decision`, `action_id`, `search`, `limit` (1–100), and `offset` filters |
 | `GET` | `/api/receipts/{id}/export` | `viewer`, `analyst`, `admin` | Export receipt in cryptographic Markdown format |
+| `POST` | `/api/receipts/verify-chain` | `viewer`, `analyst`, `admin` | Verify every receipt in insertion order; report the first broken receipt and verified count |
 | `POST` | `/api/receipts/verify` | `viewer`, `analyst`, `admin` | Cryptographically verify receipt signature and hash chain |
 | `GET` | `/api/policies` | `viewer`, `analyst`, `admin` | List active security policy guardrails |
 | `POST` | `/api/policies` | `admin` | Create new regex safety policy |
@@ -225,3 +226,25 @@ Services will initialize on local interfaces:
 ---
 
 Copyright (c) 2026 Ryan Vo <ryandtvo@gmail.com>. Released under the [MIT License](LICENSE).
+
+### Auditing approvals
+
+Use **Approval Receipts** to search by receipt, action, agent, or reviewer identifier,
+filter by decision, verify one receipt, or verify the entire ledger. Verification
+requires a valid session and CSRF token. A failure identifies the first receipt that
+failed; it does not certify the remainder of the ledger. Empty ledgers report zero
+verified receipts. Markdown exports can be downloaded for offline records.
+
+Decision changes, receipt creation, and audit events commit together. Concurrent
+reviews of the same action cannot overwrite a completed decision; competing requests
+receive the already-reviewed error. Receipt chain links are selected while holding
+SQLite's writer reservation, preventing concurrent approvals from forking the chain.
+Verification also checks the stored export against canonical signed fields and the
+current action. HMAC receipts detect changes relative to a trusted signing key;
+they are not public-key signatures or protection against an administrator who can
+replace both the database and signing key. Keep independent backups to detect
+whole-ledger deletion or truncation.
+
+The 22 labeled benchmark fixtures live in `backend/app/eval/benchmark.json` and are
+bundled by the backend Docker image. The benchmark is a small diagnostic fixture set,
+not evidence of general real-world safety accuracy.

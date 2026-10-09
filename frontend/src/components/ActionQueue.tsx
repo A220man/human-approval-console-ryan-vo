@@ -8,6 +8,8 @@ interface ActionQueueProps {
   onSelectAction: (action: ActionItem) => void;
 }
 
+const ACTION_TYPES = ['shell_command', 'database_query', 'privilege_escalation', 'file_mutation', 'financial_transaction', 'api_call'] as const;
+
 export const ActionQueue: React.FC<ActionQueueProps> = ({ user, refreshKey = 0, onSelectAction }) => {
   const [actions, setActions] = useState<ActionItem[]>([]);
   const [stats, setStats] = useState<QueueStats>({ pending: 0, under_review: 0, approved: 0, rejected: 0, critical_pending: 0 });
@@ -63,23 +65,22 @@ export const ActionQueue: React.FC<ActionQueueProps> = ({ user, refreshKey = 0, 
   return (
     <div>
       <div className="stats-grid">
-        <div className="stat-card"><div className="label">Pending Review</div><div className="value" style={{ color: '#38bdf8' }}>{stats.pending}</div></div>
-        <div className="stat-card"><div className="label">Under Active Review</div><div className="value" style={{ color: '#fbbf24' }}>{stats.under_review}</div></div>
-        <div className="stat-card"><div className="label">Critical Risk Pending</div><div className="value" style={{ color: stats.critical_pending > 0 ? '#f87171' : '#9ca3af' }}>{stats.critical_pending}</div></div>
-        <div className="stat-card"><div className="label">Approved Decisions</div><div className="value" style={{ color: '#34d399' }}>{stats.approved}</div></div>
-        <div className="stat-card"><div className="label">Rejected Actions</div><div className="value" style={{ color: '#f87171' }}>{stats.rejected}</div></div>
+        {[
+          { l: 'Pending Review', v: stats.pending, c: '#38bdf8' },
+          { l: 'Under Active Review', v: stats.under_review, c: '#fbbf24' },
+          { l: 'Critical Risk Pending', v: stats.critical_pending, c: stats.critical_pending > 0 ? '#f87171' : '#9ca3af' },
+          { l: 'Approved Decisions', v: stats.approved, c: '#34d399' },
+          { l: 'Rejected Actions', v: stats.rejected, c: '#f87171' }
+        ].map(s => <div key={s.l} className="stat-card"><div className="label">{s.l}</div><div className="value" style={{ color: s.c }}>{s.v}</div></div>)}
       </div>
 
       <div className="filter-bar">
         <input type="text" className="search-input" placeholder="Search intent, resource, agent ID..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
         <select className="select-input" value={statusFilter} onChange={e => setStatusFilter(e.target.value)}>
           <option value="">All Statuses</option>
-          <option value="pending">Pending</option>
-          <option value="under_review">Under Review</option>
-          <option value="approved">Approved</option>
-          <option value="rejected">Rejected</option>
-          <option value="modified_and_approved">Modified & Approved</option>
-          <option value="expired">Expired</option>
+          {['pending', 'under_review', 'approved', 'rejected', 'modified_and_approved', 'expired'].map(s => (
+            <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1).replace(/_/g, ' ')}</option>
+          ))}
         </select>
         <select className="select-input" value={riskFilter} onChange={e => setRiskFilter(e.target.value)}>
           <option value="">All Risk Tiers</option>
@@ -90,12 +91,7 @@ export const ActionQueue: React.FC<ActionQueueProps> = ({ user, refreshKey = 0, 
         </select>
         <select className="select-input" value={typeFilter} onChange={e => setTypeFilter(e.target.value)}>
           <option value="">All Action Types</option>
-          <option value="shell_command">Shell Command</option>
-          <option value="database_query">Database Query</option>
-          <option value="privilege_escalation">Privilege Escalation</option>
-          <option value="file_mutation">File Mutation</option>
-          <option value="financial_transaction">Financial Transaction</option>
-          <option value="api_call">API Call</option>
+          {ACTION_TYPES.map(t => <option key={t} value={t}>{t.replace(/_/g, ' ')}</option>)}
         </select>
         <button className="btn btn-primary" onClick={() => setShowSimModal(true)}>+ Ingest Agent Proposal</button>
       </div>
@@ -150,9 +146,7 @@ export const ActionQueue: React.FC<ActionQueueProps> = ({ user, refreshKey = 0, 
                 <div><label style={{ fontSize: '0.8rem', color: '#9ca3af' }}>Agent ID</label><input type="text" className="search-input" style={{ width: '100%' }} value={simAgent} onChange={e => setSimAgent(e.target.value)} required /></div>
                 <div><label style={{ fontSize: '0.8rem', color: '#9ca3af' }}>Action Type</label>
                   <select className="select-input" style={{ width: '100%' }} value={simType} onChange={e => setSimType(e.target.value)}>
-                    <option value="shell_command">shell_command</option><option value="database_query">database_query</option>
-                    <option value="privilege_escalation">privilege_escalation</option><option value="file_mutation">file_mutation</option>
-                    <option value="financial_transaction">financial_transaction</option><option value="api_call">api_call</option>
+                    {ACTION_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
                   </select>
                 </div>
               </div>

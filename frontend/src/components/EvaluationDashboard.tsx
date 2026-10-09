@@ -45,11 +45,13 @@ export const EvaluationDashboard: React.FC = () => {
       : metrics && (
         <div>
           <div className="stats-grid">
-            <div className="stat-card"><div className="label">Accuracy</div><div className="value" style={{ color: '#38bdf8' }}>{(metrics.accuracy * 100).toFixed(1)}%</div></div>
-            <div className="stat-card"><div className="label">Precision (Destructive)</div><div className="value" style={{ color: '#34d399' }}>{(metrics.precision * 100).toFixed(1)}%</div></div>
-            <div className="stat-card"><div className="label">Recall (Destructive)</div><div className="value" style={{ color: '#fbbf24' }}>{(metrics.recall * 100).toFixed(1)}%</div></div>
-            <div className="stat-card"><div className="label">F1-Score</div><div className="value" style={{ color: '#c084fc' }}>{(metrics.f1_score * 100).toFixed(1)}%</div></div>
-            <div className="stat-card"><div className="label">Critical False Negatives</div><div className="value" style={{ color: metrics.critical_false_negative_rate === 0 ? '#34d399' : '#f87171' }}>{(metrics.critical_false_negative_rate * 100).toFixed(1)}%</div></div>
+            {[
+              { l: 'Accuracy', v: `${(metrics.accuracy * 100).toFixed(1)}%`, c: '#38bdf8' },
+              { l: 'Precision (Destructive)', v: `${(metrics.precision * 100).toFixed(1)}%`, c: '#34d399' },
+              { l: 'Recall (Destructive)', v: `${(metrics.recall * 100).toFixed(1)}%`, c: '#fbbf24' },
+              { l: 'F1-Score', v: `${(metrics.f1_score * 100).toFixed(1)}%`, c: '#c084fc' },
+              { l: 'Critical False Negatives', v: `${(metrics.critical_false_negative_rate * 100).toFixed(1)}%`, c: metrics.critical_false_negative_rate === 0 ? '#34d399' : '#f87171' }
+            ].map(s => <div key={s.l} className="stat-card"><div className="label">{s.l}</div><div className="value" style={{ color: s.c }}>{s.v}</div></div>)}
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '1rem', marginBottom: '1.25rem' }}>
