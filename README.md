@@ -1,6 +1,6 @@
 # human-approval-console-ryan-vo | Ryan Vo | AI & Machine Learning
 
-Current version: `1.1.0`.
+Current version: `1.2.0`.
 
 Autonomous AI agents executing tool calls, database operations, infrastructure scripts, and financial transactions risk triggering irreversible system damage when operating without oversight or relying solely on fragile prompt-based boundaries. **human-approval-console-ryan-vo** is a production-ready human-in-the-loop governance console designed for security engineers, system administrators, and AI platform operators. It ingests proposed agent actions into a persistent queue, scores multi-factor blast radius and reversibility risks, enforces deterministic policy guardrails, provides grounded advisory explanations via provider-agnostic adapters or offline deterministic engines, enforces role-based reviews (`viewer`, `analyst`, `admin`), and generates cryptographically signed (HMAC-SHA256) approval receipts linked into an audit hash-chain.
 
