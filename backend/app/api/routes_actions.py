@@ -6,7 +6,7 @@ from typing import Any, Dict, List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from app.core.auth import require_role, verify_csrf
 from app.core.database import db_transaction, get_connection
-from app.models.schemas import ActionClaimRequest, ActionIngestRequest, ActionResponse, UserProfile
+from app.models.schemas import ActionClaimRequest, ActionIngestRequest, ActionResponse, AuditLogEntry, UserProfile
 from app.services.policy_engine import PolicyEngine
 from app.services.risk_engine import RiskEngine
 
@@ -132,3 +132,18 @@ def claim_action(action_id: str, req: ActionClaimRequest = ActionClaimRequest(),
         cur.execute("UPDATE actions SET status = 'under_review', reviewer_id = ?, reviewer_role = ? WHERE id = ?", (user.user_id, role, action_id))
         cur.execute("INSERT INTO audit_logs VALUES (?, ?, ?, ?, ?, ?, ?)", (f"aud-{uuid.uuid4().hex[:12]}", action_id, user.user_id, role, "ACTION_CLAIMED", json.dumps({"notes": req.notes}), now_iso))
     return get_action_detail(action_id, user)
+
+@router.get("/{action_id}/audit-trail", response_model=List[AuditLogEntry])
+def get_action_audit_trail(action_id: str, user: UserProfile = Depends(require_role(["viewer", "analyst", "admin"]))) -> List[AuditLogEntry]:
+    sweep_expired_actions()
+    conn = get_connection()
+    if not conn.execute("SELECT id FROM actions WHERE id = ?", (action_id,)).fetchone():
+        raise HTTPException(status_code=404, detail="Action not found.")
+    rows = conn.execute("SELECT * FROM audit_logs WHERE action_id = ? ORDER BY rowid ASC", (action_id,)).fetchall()
+    return [
+        AuditLogEntry(
+            id=r["id"], action_id=r["action_id"], actor_id=r["actor_id"], actor_role=r["actor_role"],
+            event_type=r["event_type"], details=json.loads(r["details_json"]) if r["details_json"] else {},
+            created_at=r["created_at"]
+        ) for r in rows
+    ]

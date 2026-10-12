@@ -38,6 +38,16 @@ export interface ActionItem {
   receipt_id?: string;
 }
 
+export interface AuditLogEntry {
+  id: string;
+  action_id?: string;
+  actor_id: string;
+  actor_role: string;
+  event_type: string;
+  details: Record<string, unknown>;
+  created_at: string;
+}
+
 export interface QueueStats {
   pending: number;
   under_review: number;

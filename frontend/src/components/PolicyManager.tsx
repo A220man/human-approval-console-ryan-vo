@@ -83,7 +83,7 @@ export const PolicyManager: React.FC<PolicyManagerProps> = ({ user }) => {
       {showAdd && (
         <div className="modal-backdrop" onClick={() => setShowAdd(false)}>
           <div className="modal-content" onClick={e => e.stopPropagation()}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem' }}>
+            <div className="flex-between mb-4">
               <h3>Add Safety Policy</h3><button className="btn btn-outline" onClick={() => setShowAdd(false)}>✕</button>
             </div>
             <form onSubmit={handleCreate}>

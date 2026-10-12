@@ -45,6 +45,16 @@ describe('Frontend UI Tests', () => {
           json: async () => ({ csrf_token: 'test-token' })
         });
       }
+      if (url.includes('/audit-trail')) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => ([{
+            id: 'aud-test-1', action_id: 'act-test-001', actor_id: 'test-agent', actor_role: 'agent',
+            event_type: 'ACTION_INGESTED', details: { risk_score: 85 }, created_at: new Date().toISOString()
+          }])
+        });
+      }
       if (url.includes('/api/actions')) {
         return Promise.resolve({
           ok: true,
@@ -140,7 +150,7 @@ describe('Frontend UI Tests', () => {
     await screen.findByText('act-test-001');
   });
 
-  it('explains that an expired proposal can no longer be approved', () => {
+  it('explains that an expired proposal can no longer be approved', async () => {
     render(
       <ActionDetailModal
         action={{ ...mockAction, status: 'expired', expires_at: '2000-01-01T00:00:00+00:00' }}
@@ -149,11 +159,11 @@ describe('Frontend UI Tests', () => {
         onActionUpdated={vi.fn()}
       />
     );
-    expect(screen.getByText(/Proposal deadline:/)).toBeInTheDocument();
+    expect(await screen.findByText(/Proposal deadline:/)).toBeInTheDocument();
     expect(screen.getByText(/can no longer be claimed or approved/)).toBeInTheDocument();
   });
 
-  it('warns that an edited payload is re-scored before approval', () => {
+  it('warns that an edited payload is re-scored before approval', async () => {
     render(
       <ActionDetailModal
         action={mockAction}
@@ -162,7 +172,21 @@ describe('Frontend UI Tests', () => {
         onActionUpdated={vi.fn()}
       />
     );
+    await screen.findByText('ACTION_INGESTED');
     fireEvent.click(screen.getByText('Modify & Approve'));
     expect(screen.getByText(/Edits are re-scored before approval/)).toBeInTheDocument();
+  });
+
+  it('renders action audit trail events in detail modal', async () => {
+    render(
+      <ActionDetailModal
+        action={mockAction}
+        user={mockUser}
+        onClose={vi.fn()}
+        onActionUpdated={vi.fn()}
+      />
+    );
+    expect(await screen.findByText('ACTION_INGESTED')).toBeInTheDocument();
+    expect(screen.getByText('test-agent')).toBeInTheDocument();
   });
 });

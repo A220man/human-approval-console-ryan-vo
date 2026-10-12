@@ -40,3 +40,10 @@ tr:hover td{background:rgba(255,255,255,.02)}
 .modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.75);display:flex;align-items:center;justify-content:center;z-index:50;padding:1rem}
 .modal-content{background:#111827;border:1px solid var(--border-color);border-radius:10px;width:100%;max-width:800px;max-height:90vh;overflow-y:auto;padding:1.5rem}
 pre{background:#030712;border:1px solid #1f2937;border-radius:6px;padding:.75rem;font-size:.8rem;overflow-x:auto;color:#e2e8f0}
+.card-section{margin-bottom:1rem;padding:.75rem;background:#0f172a;border:1px solid #334155;border-radius:8px}
+.sub-card{background:#1e293b;padding:.5rem;border-radius:6px;margin-top:.25rem}
+.section-title{font-size:.75rem;color:#9ca3af;text-transform:uppercase;font-weight:600}
+.meta-text{font-size:.8rem;color:#9ca3af}
+.flex-between{display:flex;justify-content:space-between;align-items:center}
+.flex-row{display:flex;align-items:center;gap:.5rem}
+.timeline-item{display:flex;justify-content:space-between;align-items:center;background:#1e293b;padding:.4rem .6rem;border-radius:4px;font-size:.75rem}

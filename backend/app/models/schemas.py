@@ -110,6 +110,15 @@ class ActionReviewRequest(BaseModel):
     rationale: str = Field(..., min_length=5, max_length=2000)
     modified_payload: Optional[Dict[str, Any]] = None
 
+class AuditLogEntry(BaseModel):
+    id: str
+    action_id: Optional[str] = None
+    actor_id: str
+    actor_role: str
+    event_type: str
+    details: Dict[str, Any]
+    created_at: str
+
 class ReceiptResponse(BaseModel):
     id: str
     action_id: str

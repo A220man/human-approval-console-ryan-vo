@@ -1,0 +1,113 @@
+{
+  "schema_version": 1,
+  "current_feature": "audit-trail-timeline",
+  "features": [
+    {
+      "id": "action-queue-risk-scoring",
+      "title": "Autonomous agent action queue ingestion and multi-factor risk scoring engine",
+      "status": "done",
+      "acceptance": [
+        "Ingests agent action proposals via POST /api/actions with automated blast radius, reversibility, and resource criticality scoring",
+        "Enforces deterministic policy guardrails with regex pattern matching and auto-reject violation rules",
+        "Lists and filters proposals by status, risk tier, and action type with queue summary metrics"
+      ],
+      "implementation": [
+        "backend/app/api/routes_actions.py",
+        "backend/app/services/risk_engine.py",
+        "backend/app/services/policy_engine.py",
+        "frontend/src/components/ActionQueue.tsx"
+      ],
+      "tests": [
+        "backend/tests/test_actions_and_reviews.py",
+        "backend/tests/test_risk_engine.py"
+      ]
+    },
+    {
+      "id": "role-based-human-review",
+      "title": "Role-based human-in-the-loop review workflow and parameter modification",
+      "status": "done",
+      "acceptance": [
+        "Requires analyst role for standard reviews and administrator role for critical risk proposals",
+        "Supports APPROVE, REJECT, and MODIFY_AND_APPROVE with mandatory decision rationale",
+        "Re-scores modified payloads before approval, blocking escalation beyond reviewer authority"
+      ],
+      "implementation": [
+        "backend/app/api/routes_reviews.py",
+        "frontend/src/components/ActionDetailModal.tsx"
+      ],
+      "tests": [
+        "backend/tests/test_actions_and_reviews.py",
+        "backend/tests/test_auth.py"
+      ]
+    },
+    {
+      "id": "cryptographic-receipt-chain",
+      "title": "Cryptographic approval receipts and tamper-evident audit hash chain",
+      "status": "done",
+      "acceptance": [
+        "Generates immutable HMAC-SHA256 signed receipts chained to prior receipt hash for every review decision",
+        "Provides single receipt verification and full ledger unbroken chain continuity verification",
+        "Supports Markdown export of cryptographic receipts with signed manifests"
+      ],
+      "implementation": [
+        "backend/app/api/routes_receipts.py",
+        "backend/app/services/receipt_service.py",
+        "frontend/src/components/ReceiptsView.tsx"
+      ],
+      "tests": [
+        "backend/tests/test_receipt_atomicity.py",
+        "backend/tests/test_receipts_and_eval.py",
+        "frontend/src/test/ReceiptsView.test.tsx"
+      ]
+    },
+    {
+      "id": "action-ttl-expiration",
+      "title": "Automatic action proposal expiration sweep and review refusal",
+      "status": "done",
+      "acceptance": [
+        "Proposals past expires_at automatically transition to expired status during queue operations",
+        "Expired proposals log ACTION_EXPIRED to audit log and cannot be claimed or reviewed",
+        "UI reflects expired status badge and disables review action forms"
+      ],
+      "implementation": [
+        "backend/app/api/routes_actions.py",
+        "frontend/src/components/ActionDetailModal.tsx"
+      ],
+      "tests": [
+        "backend/tests/test_actions_and_reviews.py"
+      ]
+    },
+    {
+      "id": "audit-trail-timeline",
+      "title": "Action audit trail inspection and timeline tracking",
+      "status": "done",
+      "acceptance": [
+        "GET /api/actions/{action_id}/audit-trail returns chronological audit entries with actors, roles, event types, and structured details",
+        "ActionDetailModal presents an interactive audit trail activity log showing full chain-of-custody history",
+        "Validates role-based access control and handles 404 for missing actions"
+      ],
+      "implementation": [
+        "backend/app/api/routes_actions.py",
+        "backend/app/models/schemas.py",
+        "frontend/src/components/ActionDetailModal.tsx",
+        "frontend/src/services/apiClient.ts",
+        "frontend/src/types/api.ts"
+      ],
+      "tests": [
+        "backend/tests/test_actions_and_reviews.py",
+        "frontend/src/test/App.test.tsx"
+      ]
+    },
+    {
+      "id": "webhook-dispatch-execution",
+      "title": "Automated dispatch webhook for downstream agent execution upon approval",
+      "status": "planned",
+      "acceptance": [
+        "Configurable HTTPS webhook endpoint receiving signed approval payload and receipt token upon approval",
+        "Webhook delivery retries with exponential backoff and dispatch audit event logging"
+      ],
+      "implementation": [],
+      "tests": []
+    }
+  ]
+}

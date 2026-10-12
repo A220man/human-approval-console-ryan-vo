@@ -10,6 +10,15 @@ from app.services.receipt_service import ReceiptService
 router = APIRouter(prefix="/api/receipts", tags=["Receipts"])
 
 
+def _row_to_receipt(r: Any) -> ReceiptResponse:
+    return ReceiptResponse(
+        id=r["id"], action_id=r["action_id"], agent_id=r["agent_id"], decision=r["decision"],
+        reviewer_id=r["reviewer_id"], reviewer_role=r["reviewer_role"], signed_at=r["signed_at"],
+        payload_hash=r["payload_hash"], rationale_hash=r["rationale_hash"], receipt_hash=r["receipt_hash"],
+        prev_receipt_hash=r["prev_receipt_hash"], signature=r["signature"], receipt_data=json.loads(r["receipt_data_json"])
+    )
+
+
 @router.get("", response_model=Dict[str, Any])
 def list_receipts(
     decision: Optional[str] = Query(None),
@@ -36,16 +45,7 @@ def list_receipts(
     params.extend([limit, offset])
 
     rows = conn.execute(q, params).fetchall()
-    receipts = [
-        ReceiptResponse(
-            id=r["id"], action_id=r["action_id"], agent_id=r["agent_id"], decision=r["decision"],
-            reviewer_id=r["reviewer_id"], reviewer_role=r["reviewer_role"], signed_at=r["signed_at"],
-            payload_hash=r["payload_hash"], rationale_hash=r["rationale_hash"], receipt_hash=r["receipt_hash"],
-            prev_receipt_hash=r["prev_receipt_hash"], signature=r["signature"], receipt_data=json.loads(r["receipt_data_json"])
-        ) for r in rows
-    ]
-
-    return {"total": total_count, "limit": limit, "offset": offset, "items": receipts}
+    return {"total": total_count, "limit": limit, "offset": offset, "items": [_row_to_receipt(r) for r in rows]}
 
 
 @router.get("/{receipt_id}", response_model=ReceiptResponse)
@@ -57,22 +57,7 @@ def get_receipt(
     receipt = ReceiptService.get_receipt_by_id(receipt_id)
     if not receipt:
         raise HTTPException(status_code=404, detail="Receipt not found.")
-
-    return ReceiptResponse(
-        id=receipt["id"],
-        action_id=receipt["action_id"],
-        agent_id=receipt["agent_id"],
-        decision=receipt["decision"],
-        reviewer_id=receipt["reviewer_id"],
-        reviewer_role=receipt["reviewer_role"],
-        signed_at=receipt["signed_at"],
-        payload_hash=receipt["payload_hash"],
-        rationale_hash=receipt["rationale_hash"],
-        receipt_hash=receipt["receipt_hash"],
-        prev_receipt_hash=receipt["prev_receipt_hash"],
-        signature=receipt["signature"],
-        receipt_data=json.loads(receipt["receipt_data_json"])
-    )
+    return _row_to_receipt(receipt)
 
 
 @router.get("/{receipt_id}/export")

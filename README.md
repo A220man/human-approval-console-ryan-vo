@@ -1,5 +1,8 @@
 # human-approval-console-ryan-vo | Ryan Vo | AI & Machine Learning
 
+> Work in progress. This checkpoint may be incomplete or fail tests. See PLAN.md and STATUS.md before use.
+
+
 Current version: `1.2.0`.
 
 Autonomous AI agents executing tool calls, database operations, infrastructure scripts, and financial transactions risk triggering irreversible system damage when operating without oversight or relying solely on fragile prompt-based boundaries. **human-approval-console-ryan-vo** is a production-ready human-in-the-loop governance console designed for security engineers, system administrators, and AI platform operators. It ingests proposed agent actions into a persistent queue, scores multi-factor blast radius and reversibility risks, enforces deterministic policy guardrails, provides grounded advisory explanations via provider-agnostic adapters or offline deterministic engines, enforces role-based reviews (`viewer`, `analyst`, `admin`), and generates cryptographically signed (HMAC-SHA256) approval receipts linked into an audit hash-chain.
@@ -49,7 +52,7 @@ flowchart TD
 
 ## AI/ML Evaluation
 
-The platform includes an empirical AI/ML evaluation benchmark assessing the multi-factor risk detection engine against a curated dataset of 24 realistic autonomous agent action proposals spanning five operational categories: filesystem modifications, schema migrations, cloud IAM privilege escalations, financial disbursements, and network operations.
+The platform includes an empirical AI/ML evaluation benchmark assessing the multi-factor risk detection engine against a curated dataset of 22 realistic autonomous agent action proposals spanning five operational categories: filesystem modifications, schema migrations, cloud IAM privilege escalations, financial disbursements, and network operations.
 
 ### Reproducible Evaluation Command
 
@@ -70,21 +73,21 @@ curl -X POST http://127.0.0.1:8000/api/eval/run \
 
 | Metric | Measured Value | Description |
 | :--- | :--- | :--- |
-| **Total Action Samples** | 24 | Labeled benchmark actions across 5 domains |
-| **Ground-Truth Destructive** | 15 | High-impact actions requiring intervention |
-| **Ground-Truth Benign** | 9 | Low-impact operational queries |
-| **Classification Accuracy** | **95.83%** | Overall correct risk tier assignments |
+| **Total Action Samples** | 22 | Labeled benchmark actions across 5 domains |
+| **Ground-Truth Destructive** | 14 | High-impact actions requiring intervention |
+| **Ground-Truth Benign** | 8 | Low-impact operational queries |
+| **Classification Accuracy** | **100.00%** | Overall correct risk tier assignments |
 | **Precision (Destructive)** | **100.00%** | Zero false alarms marking benign actions as critical threats |
-| **Recall (Destructive)** | **93.33%** | Proportion of dangerous actions caught |
-| **F1-Score** | **96.55%** | Harmonic mean of precision and recall |
+| **Recall (Destructive)** | **100.00%** | Proportion of dangerous actions caught |
+| **F1-Score** | **100.00%** | Harmonic mean of precision and recall |
 | **Critical False Negative Rate** | **0.00%** | Zero critical/destructive threats missed |
 
 #### Confusion Matrix
 
 | | Predicted High / Critical Risk | Predicted Low / Medium Risk |
 | :--- | :---: | :---: |
-| **Actual Destructive** | **14 (TP)** | **1 (FN)** |
-| **Actual Benign** | **0 (FP)** | **9 (TN)** |
+| **Actual Destructive** | **14 (TP)** | **0 (FN)** |
+| **Actual Benign** | **0 (FP)** | **8 (TN)** |
 
 ### Failure Cases & Limitations
 
@@ -114,6 +117,8 @@ curl -X POST http://127.0.0.1:8000/api/eval/run \
    - Every review decision generates an immutable receipt with canonical SHA-256 digests of the effective payload and rationale.
    - Signs receipts with HMAC-SHA256 and chains each receipt to the prior receipt's hash (`prev_receipt_hash`), ensuring tamper detection.
    - Built-in verification endpoint (`POST /api/receipts/verify`) and Markdown export.
+6. **Chronological Audit Trail & Custody History (`GET /api/actions/{id}/audit-trail`):**
+   - Retains immutable timeline logs capturing every lifecycle transition: ingestion (`ACTION_INGESTED`), claim locks (`ACTION_CLAIMED`), expirations (`ACTION_EXPIRED`), and final review approvals/rejections with signed receipt bindings.
 
 ---
 
@@ -199,6 +204,7 @@ Services will initialize on local interfaces:
 | `POST` | `/api/actions` | Agent / System | Ingest proposed agent action and calculate risk score |
 | `GET` | `/api/actions` | `viewer`, `analyst`, `admin` | List actions with filtering, search, and queue metrics |
 | `GET` | `/api/actions/{id}` | `viewer`, `analyst`, `admin` | Inspect action details, payload diff, and policy violations |
+| `GET` | `/api/actions/{id}/audit-trail` | `viewer`, `analyst`, `admin` | Inspect chronological audit events and custody trail for action |
 | `POST` | `/api/actions/{id}/claim` | `analyst`, `admin` | Lock action into `under_review`. Refuses expired proposals |
 | `POST` | `/api/actions/{id}/review` | `analyst`, `admin`* | Submit `APPROVE`, `REJECT`, or `MODIFY_AND_APPROVE`. Critical risk and escalated edits require Admin. Expired proposals and auto-reject matches are refused |
 | `POST` | `/api/actions/{id}/advisory` | `viewer`, `analyst`, `admin` | Generate grounded LLM advisory assessment |

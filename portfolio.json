@@ -4,7 +4,7 @@
   "owner": "A220man",
   "email": "ryandtvo@gmail.com",
   "domain": "ai-agents",
-  "summary": "Review AI agent actions with atomic approval receipts, search the receipt ledger, verify its complete hash chain, and export audit evidence.",
+  "summary": "Work in progress: human-approval-console-ryan-vo",
   "workflows": [
     "Queue and inspect proposed autonomous agent actions with automated blast-radius analysis and deterministic policy enforcement",
     "Conduct role-based review with mandatory decision rationale, payload edits that are re-scored before approval, and grounded LLM advisory explanations",
@@ -17,5 +17,6 @@
     "gemini",
     "ollama"
   ],
-  "version": "1.2.0"
+  "version": "1.2.0",
+  "status": "work-in-progress"
 }

@@ -7,7 +7,7 @@ const AuditModal: React.FC<{
 }> = ({ title, isValid, details, items, onClose }) => (
   <div className="modal-backdrop" onClick={onClose}>
     <div className="modal-content" onClick={e => e.stopPropagation()}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem' }}>
+      <div className="flex-between mb-4">
         <h3>{title}</h3><button className="btn btn-outline" onClick={onClose}>✕</button>
       </div>
       <div style={{ padding: '0.75rem', background: isValid ? '#064e3b' : '#7f1d1d', borderRadius: '8px', marginBottom: '1rem' }}>
@@ -16,7 +16,7 @@ const AuditModal: React.FC<{
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', marginBottom: '1rem', fontSize: '0.8rem' }}>
         {items.map(([k, v]) => (
-          <div key={k} style={{ background: '#1e293b', padding: '0.5rem', borderRadius: '4px' }}>{k}: <strong>{v}</strong></div>
+          <div key={k} className="sub-card">{k}: <strong>{v}</strong></div>
         ))}
       </div>
       <div style={{ display: 'flex', justifyContent: 'flex-end' }}><button className="btn btn-primary" onClick={onClose}>Close</button></div>
