@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.3.0 — work-in-progress checkpoint
+
+Partial code published for continued development. Known issues: STATUS.md.
+
 ## [1.2.0] - 2026-10-09
 
 ## [1.1.0] - 2026-10-07
@@ -10,6 +14,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+### Added
+- Action lifecycle audit trail endpoint (`GET /api/actions/{action_id}/audit-trail`) returning chronological custody logs (`ACTION_INGESTED`, `ACTION_CLAIMED`, `ACTION_APPROVE`, `ACTION_EXPIRED`) with actor identifiers, roles, event types, and structured metadata.
+- Interactive audit trail and custody history section in `ActionDetailModal` displaying the chronological sequence of lifecycle events for inspected proposals.
+- Automated tests covering the complete audit trail lifecycle and boundary conditions across backend pytest and frontend Vitest suites.
 
 ### Fixed
 - Proposals past `expires_at` move to `expired`, are written to the audit log, and can no longer be claimed or approved.

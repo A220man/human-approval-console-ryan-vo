@@ -248,3 +248,58 @@ def test_filter_and_search_actions(analyst_client):
     assert "stats" in data
     for item in data["items"]:
         assert item["status"] == "pending"
+
+
+def test_action_audit_trail_lifecycle(analyst_client):
+    """Verifies chronological audit trail captures ingestion, claim, and review events."""
+    created = analyst_client.post("/api/actions", json={
+        "agent_id": "audit-tracker-bot",
+        "session_id": "sess-trail-01",
+        "action_type": "database_query",
+        "target_resource": "staging-db",
+        "payload": {"sql": "SELECT COUNT(*) FROM audit_entries;"},
+        "intent": "Verify audit log counter"
+    })
+    assert created.status_code == 201
+    action_id = created.json()["id"]
+
+    # Claim action
+    claim_resp = analyst_client.post(f"/api/actions/{action_id}/claim", json={"notes": "Verifying audit readiness"})
+    assert claim_resp.status_code == 200
+
+    # Approve action
+    review_resp = analyst_client.post(f"/api/actions/{action_id}/review", json={
+        "decision": "APPROVE",
+        "rationale": "Verified read-only query is safe for execution."
+    })
+    assert review_resp.status_code == 200
+
+    # Retrieve audit trail as analyst
+    trail_resp = analyst_client.get(f"/api/actions/{action_id}/audit-trail")
+    assert trail_resp.status_code == 200
+    events = trail_resp.json()
+    assert len(events) == 3
+
+    assert events[0]["event_type"] == "ACTION_INGESTED"
+    assert events[0]["actor_id"] == "audit-tracker-bot"
+    assert "risk_score" in events[0]["details"]
+
+    assert events[1]["event_type"] == "ACTION_CLAIMED"
+    assert events[1]["actor_role"] == "analyst"
+    assert events[1]["details"]["notes"] == "Verifying audit readiness"
+
+    assert events[2]["event_type"] == "ACTION_APPROVE"
+    assert "receipt_id" in events[2]["details"]
+
+    # Also verify viewer can retrieve audit trail
+    analyst_client.post("/api/auth/demo-login", json={"role": "viewer"})
+    viewer_resp = analyst_client.get(f"/api/actions/{action_id}/audit-trail")
+    assert viewer_resp.status_code == 200
+    assert len(viewer_resp.json()) == 3
+
+
+def test_action_audit_trail_not_found(analyst_client):
+    """Verifies 404 response for audit trail of non-existent action."""
+    resp = analyst_client.get("/api/actions/act-non-existent-999/audit-trail")
+    assert resp.status_code == 404
+    assert resp.json()["detail"] == "Action not found."

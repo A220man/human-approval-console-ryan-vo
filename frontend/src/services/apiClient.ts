@@ -1,5 +1,5 @@
 import {
-  ActionItem, ActionListResponse, AdvisoryResponse,
+  ActionItem, ActionListResponse, AdvisoryResponse, AuditLogEntry,
   BenchmarkAction, ChainVerifyResult, EvaluationMetrics, PolicyItem,
   ReceiptItem, ReceiptVerifyResult, UserProfile
 } from '../types/api';
@@ -55,6 +55,7 @@ class ApiClient {
     return this.request<ActionListResponse>(`/api/actions${qs ? `?${qs}` : ''}`);
   };
   getAction = (id: string) => this.request<ActionItem>(`/api/actions/${id}`);
+  getActionAuditTrail = (id: string) => this.request<AuditLogEntry[]>(`/api/actions/${id}/audit-trail`);
   ingestAction = (body: any) => this.request<ActionItem>('/api/actions', { method: 'POST', body: JSON.stringify(body) });
   claimAction = (id: string, notes?: string) => this.request<ActionItem>(`/api/actions/${id}/claim`, { method: 'POST', body: JSON.stringify({ notes }) });
   reviewAction = (id: string, body: any) => this.request<any>(`/api/actions/${id}/review`, { method: 'POST', body: JSON.stringify(body) });
