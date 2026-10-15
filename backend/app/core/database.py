@@ -57,6 +57,12 @@ def init_db() -> None:
                 required_role TEXT NOT NULL, auto_reject INTEGER NOT NULL DEFAULT 0,
                 enabled INTEGER NOT NULL DEFAULT 1, created_at TEXT NOT NULL
             );
+            CREATE TABLE IF NOT EXISTS webhooks (
+                id TEXT PRIMARY KEY, name TEXT NOT NULL, url TEXT NOT NULL,
+                secret TEXT, event_filter_json TEXT, enabled INTEGER NOT NULL DEFAULT 1,
+                retry_count INTEGER NOT NULL DEFAULT 0, max_retries INTEGER NOT NULL DEFAULT 5,
+                created_at TEXT NOT NULL, updated_at TEXT NOT NULL
+            );
             CREATE TABLE IF NOT EXISTS receipts (
                 id TEXT PRIMARY KEY, action_id TEXT NOT NULL UNIQUE, agent_id TEXT NOT NULL,
                 decision TEXT NOT NULL, reviewer_id TEXT NOT NULL, reviewer_role TEXT NOT NULL,

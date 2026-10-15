@@ -3,7 +3,7 @@
 > Work in progress. This checkpoint may be incomplete or fail tests. See PLAN.md and STATUS.md before use.
 
 
-Current version: `1.2.0`.
+Current version: `1.3.0`.
 
 Autonomous AI agents executing tool calls, database operations, infrastructure scripts, and financial transactions risk triggering irreversible system damage when operating without oversight or relying solely on fragile prompt-based boundaries. **human-approval-console-ryan-vo** is a production-ready human-in-the-loop governance console designed for security engineers, system administrators, and AI platform operators. It ingests proposed agent actions into a persistent queue, scores multi-factor blast radius and reversibility risks, enforces deterministic policy guardrails, provides grounded advisory explanations via provider-agnostic adapters or offline deterministic engines, enforces role-based reviews (`viewer`, `analyst`, `admin`), and generates cryptographically signed (HMAC-SHA256) approval receipts linked into an audit hash-chain.
 
@@ -215,6 +215,12 @@ Services will initialize on local interfaces:
 | `GET` | `/api/policies` | `viewer`, `analyst`, `admin` | List active security policy guardrails |
 | `POST` | `/api/policies` | `admin` | Create new regex safety policy |
 | `DELETE`| `/api/policies/{id}` | `admin` | Delete safety policy |
+| `GET` | `/api/webhooks` | `admin`, `analyst`, `viewer` | List configured webhook endpoints with filtering |
+| `POST` | `/api/webhooks` | `admin` | Create new webhook configuration with URL, secret, event filter, and retry settings |
+| `GET` | `/api/webhooks/{id}` | `admin`, `analyst`, `viewer` | Inspect webhook configuration details |
+| `PATCH` | `/api/webhooks/{id}` | `admin` | Update webhook configuration |
+| `DELETE` | `/api/webhooks/{id}` | `admin` | Delete webhook configuration |
+| `POST` | `/api/webhooks/{id}/test` | `admin` | Send test payload to verify webhook delivery |
 | `GET` | `/api/eval/benchmark` | `viewer`, `analyst`, `admin` | Retrieve labeled safety evaluation actions |
 | `POST` | `/api/eval/run` | `viewer`, `analyst`, `admin` | Run empirical benchmark evaluation and return metrics |
 | `POST` | `/api/auth/demo-login` | Public (Local Dev) | Session login for Viewer, Analyst, or Admin |

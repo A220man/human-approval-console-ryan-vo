@@ -7,11 +7,12 @@ import { ActionDetailModal } from './components/ActionDetailModal';
 import { ReceiptsView } from './components/ReceiptsView';
 import { PolicyManager } from './components/PolicyManager';
 import { EvaluationDashboard } from './components/EvaluationDashboard';
+import { WebhookManager } from './components/WebhookManager';
 
 export const App: React.FC = () => {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState<'queue' | 'receipts' | 'policies' | 'benchmark'>('queue');
+  const [tab, setTab] = useState<'queue' | 'receipts' | 'policies' | 'benchmark' | 'webhooks'>('queue');
   const [selectedAction, setSelectedAction] = useState<ActionItem | null>(null);
   const [queueVersion, setQueueVersion] = useState(0);
 
@@ -61,6 +62,7 @@ export const App: React.FC = () => {
         {tab === 'receipts' && <ReceiptsView />}
         {tab === 'policies' && <PolicyManager user={user} />}
         {tab === 'benchmark' && <EvaluationDashboard />}
+        {tab === 'webhooks' && <WebhookManager user={user} />}
       </main>
       {selectedAction && (
         <ActionDetailModal action={selectedAction} user={user} onClose={() => setSelectedAction(null)} onActionUpdated={() => { setSelectedAction(null); setQueueVersion(v => v + 1); }} />

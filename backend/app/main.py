@@ -10,6 +10,7 @@ from app.api.routes_eval import router as eval_router
 from app.api.routes_policies import router as policies_router
 from app.api.routes_receipts import router as receipts_router
 from app.api.routes_reviews import router as reviews_router
+from app.api.routes_webhooks import router as webhooks_router
 from app.core.config import settings
 from app.core.database import init_db
 
@@ -78,3 +79,4 @@ app.include_router(receipts_router)
 app.include_router(policies_router)
 app.include_router(eval_router)
 app.include_router(advisor_router)
+app.include_router(webhooks_router)
