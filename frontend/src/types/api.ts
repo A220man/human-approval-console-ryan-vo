@@ -162,3 +162,45 @@ export interface EvaluationMetrics {
     false_negatives: number;
   }>;
 }
+
+export interface Webhook {
+  id: string;
+  name: string;
+  url: string;
+  secret: string | null;
+  event_filter: string[] | null;
+  enabled: boolean;
+  max_retries: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface WebhookListResponse {
+  total: number;
+  items: Webhook[];
+}
+
+export interface WebhookCreateRequest {
+  name: string;
+  url: string;
+  secret?: string;
+  event_filter?: string[];
+  enabled?: boolean;
+  max_retries?: number;
+}
+
+export interface WebhookUpdateRequest {
+  name?: string;
+  url?: string;
+  secret?: string;
+  event_filter?: string[];
+  enabled?: boolean;
+  max_retries?: number;
+}
+
+export interface WebhookTestResult {
+  success: boolean;
+  attempt?: number;
+  status_code?: number;
+  error?: string;
+}

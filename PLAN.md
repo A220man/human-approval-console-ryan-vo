@@ -75,9 +75,13 @@ Tests: `backend/tests/test_actions_and_reviews.py`, `frontend/src/test/App.test.
 
 ### webhook-dispatch-execution — Automated dispatch webhook for downstream agent execution upon approval
 
-Status: planned
+Status: done
 
 Acceptance:
 - Configurable HTTPS webhook endpoint receiving signed approval payload and receipt token upon approval
 - Webhook delivery retries with exponential backoff and dispatch audit event logging
+
+Implementation: `backend/app/api/routes_webhooks.py`, `backend/app/services/webhook_service.py`, `backend/app/core/database.py`, `backend/app/main.py`, `backend/app/api/routes_reviews.py`, `frontend/src/components/WebhookManager.tsx`, `frontend/src/services/apiClient.ts`, `frontend/src/types/api.ts`, `frontend/src/components/Navbar.tsx`, `frontend/src/App.tsx`
+
+Tests: `backend/tests/test_actions_and_reviews.py`, `frontend/src/test/App.test.tsx`
 

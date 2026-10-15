@@ -1,7 +1,8 @@
 import {
   ActionItem, ActionListResponse, AdvisoryResponse, AuditLogEntry,
   BenchmarkAction, ChainVerifyResult, EvaluationMetrics, PolicyItem,
-  ReceiptItem, ReceiptVerifyResult, UserProfile
+  ReceiptItem, ReceiptVerifyResult, UserProfile,
+  Webhook, WebhookListResponse, WebhookCreateRequest, WebhookUpdateRequest, WebhookTestResult
 } from '../types/api';
 
 class ApiClient {
@@ -75,6 +76,16 @@ class ApiClient {
 
   getBenchmark = () => this.request<BenchmarkAction[]>('/api/eval/benchmark');
   runEvaluation = () => this.request<EvaluationMetrics>('/api/eval/run', { method: 'POST' });
+
+  getWebhooks = (enabledOnly?: boolean) => {
+    const qs = enabledOnly ? '?enabled_only=true' : '';
+    return this.request<WebhookListResponse>(`/api/webhooks${qs}`);
+  };
+  getWebhook = (id: string) => this.request<Webhook>(`/api/webhooks/${id}`);
+  createWebhook = (body: WebhookCreateRequest) => this.request<Webhook>('/api/webhooks', { method: 'POST', body: JSON.stringify(body) });
+  updateWebhook = (id: string, body: WebhookUpdateRequest) => this.request<Webhook>(`/api/webhooks/${id}`, { method: 'PATCH', body: JSON.stringify(body) });
+  deleteWebhook = (id: string) => this.request(`/api/webhooks/${id}`, { method: 'DELETE' });
+  testWebhook = (id: string) => this.request<WebhookTestResult>(`/api/webhooks/${id}/test`, { method: 'POST' });
 }
 
 export const api = new ApiClient();

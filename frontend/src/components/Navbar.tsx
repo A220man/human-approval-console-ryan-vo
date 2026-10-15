@@ -3,8 +3,8 @@ import { UserProfile } from '../types/api';
 
 interface NavbarProps {
   user: UserProfile;
-  activeTab: 'queue' | 'receipts' | 'policies' | 'benchmark';
-  onSelectTab: (tab: 'queue' | 'receipts' | 'policies' | 'benchmark') => void;
+  activeTab: 'queue' | 'receipts' | 'policies' | 'benchmark' | 'webhooks';
+  onSelectTab: (tab: 'queue' | 'receipts' | 'policies' | 'benchmark' | 'webhooks') => void;
   onSwitchRole: (role: 'viewer' | 'analyst' | 'admin') => void;
   onLogout: () => void;
 }
@@ -52,6 +52,12 @@ export const Navbar: React.FC<NavbarProps> = ({
           onClick={() => onSelectTab('benchmark')}
         >
           AI Safety Benchmark
+        </button>
+        <button
+          className={`nav-btn ${activeTab === 'webhooks' ? 'active' : ''}`}
+          onClick={() => onSelectTab('webhooks')}
+        >
+          Webhook Dispatch
         </button>
       </nav>
 

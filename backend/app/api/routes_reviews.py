@@ -10,6 +10,7 @@ from app.models.schemas import ActionReviewRequest, UserProfile
 from app.services.policy_engine import PolicyEngine
 from app.services.receipt_service import ReceiptService
 from app.services.risk_engine import RiskEngine
+from app.services.webhook_service import WebhookService
 
 router = APIRouter(prefix="/api/actions", tags=["Reviews"])
 
@@ -98,6 +99,23 @@ def submit_review(
             cursor=cursor
         )
 
+        # Dispatch webhooks for approved actions (after transaction commits)
+        webhook_results = []
+        if new_status in ("approved", "modified_and_approved"):
+            import asyncio
+            action_for_webhook = dict(row)
+            action_for_webhook["risk_score"] = risk_score
+            action_for_webhook["risk_level"] = risk_level
+            action_for_webhook["payload_json"] = json.dumps(effective_payload)
+            try:
+                webhook_results = asyncio.run(
+                    WebhookService.dispatch_to_all_webhooks(action_for_webhook, receipt_data, "action.approved")
+                )
+            except Exception as e:
+                import logging
+                logging.getLogger(__name__).error(f"Webhook dispatch failed for action {action_id}: {e}")
+                webhook_results = [{"error": str(e)}]
+
         return {
             "message": f"Action {decision.lower()} recorded successfully.",
             "action_id": action_id,
@@ -107,5 +125,6 @@ def submit_review(
             "reviewed_at": now_iso,
             "risk_score": risk_score,
             "risk_level": risk_level,
-            "receipt": receipt_data
+            "receipt": receipt_data,
+            "webhook_dispatch": webhook_results
         }

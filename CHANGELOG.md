@@ -1,9 +1,22 @@
 # Changelog
 
-## 1.3.0 — work-in-progress checkpoint
+## 1.4.0 — work-in-progress checkpoint
 
 Partial code published for continued development. Known issues: STATUS.md.
 
+## 1.3.0 — 2026-10-15
+
+### Added
+- Webhook dispatch service (`WebhookService`) with configurable HTTPS endpoints, HMAC-SHA256 signed payloads, event filtering, and exponential backoff retries (up to 5 attempts with jitter).
+- Webhook configuration API (`POST/GET/PATCH/DELETE /api/webhooks`) for admin users to manage dispatch targets with secrets, event filters, and retry limits.
+- Automatic webhook dispatch on action approval (`action.approved` event) delivering signed approval payload and receipt token to all matching enabled webhooks.
+- Webhook delivery audit logging (`WEBHOOK_DISPATCH` events) capturing attempt number, success/failure, status code, and error details.
+- Frontend `WebhookManager` component with create/edit/delete/test UI, role-gated to administrators, accessible via new "Webhook Dispatch" navigation tab.
+- API client extensions (`getWebhooks`, `createWebhook`, `updateWebhook`, `deleteWebhook`, `testWebhook`) with typed request/response models.
+
+### Fixed
+- Backend advisor router registration restored after import cleanup.
+- Frontend Navbar and App routing updated to include Webhook Dispatch tab.
 ## [1.2.0] - 2026-10-09
 
 ## [1.1.0] - 2026-10-07
