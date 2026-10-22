@@ -325,3 +325,81 @@ class WebhookService:
             result["webhook_name"] = webhook["name"]
             results.append(result)
         return results
+    @classmethod
+    def get_webhook_deliveries(
+        cls,
+        webhook_id: Optional[str] = None,
+        success: Optional[bool] = None,
+        limit: int = 50,
+        offset: int = 0,
+        since: Optional[str] = None,
+        until: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """Get paginated webhook delivery attempts from audit log."""
+        conn = get_connection()
+        
+        # Build query
+        base_query = """
+            FROM audit_logs 
+            WHERE event_type = 'WEBHOOK_DISPATCH'
+        """
+        params = []
+        
+        if webhook_id:
+            base_query += " AND json_extract(details_json, '$.webhook_id') = ?"
+            params.append(webhook_id)
+        
+        if success is not None:
+            base_query += " AND json_extract(details_json, '$.success') = ?"
+            params.append(int(success))
+        
+        if since:
+            base_query += " AND created_at >= ?"
+            params.append(since)
+        
+        if until:
+            base_query += " AND created_at <= ?"
+            params.append(until)
+        
+        # Count total
+        count_query = "SELECT COUNT(*) " + base_query
+        total = conn.execute(count_query, params).fetchone()[0]
+        
+        # Get paginated results
+        query = f"""
+            SELECT id, action_id, actor_id, actor_role, event_type, details_json, created_at
+            {base_query}
+            ORDER BY created_at DESC
+            LIMIT ? OFFSET ?
+        """
+        params.extend([limit, offset])
+        rows = conn.execute(query, params).fetchall()
+        
+        items = []
+        for row in rows:
+            details = json.loads(row["details_json"]) if row["details_json"] else {}
+            items.append({
+                "id": row["id"],
+                "webhook_id": details.get("webhook_id", ""),
+                "webhook_name": details.get("webhook_name", ""),
+                "action_id": row["action_id"],
+                "receipt_id": details.get("receipt_id", ""),
+                "event_type": details.get("event_type", ""),
+                "attempt": details.get("attempt", 0),
+                "success": bool(details.get("success", False)),
+                "status_code": details.get("status_code"),
+                "error": details.get("error"),
+                "created_at": row["created_at"],
+            })
+        
+        return {"total": total, "limit": limit, "offset": offset, "items": items}
+
+    @classmethod
+    def get_webhook_deliveries_by_webhook(
+        cls,
+        webhook_id: str,
+        limit: int = 50,
+        offset: int = 0
+    ) -> Dict[str, Any]:
+        """Get delivery attempts for a specific webhook."""
+        return cls.get_webhook_deliveries(webhook_id=webhook_id, limit=limit, offset=offset)

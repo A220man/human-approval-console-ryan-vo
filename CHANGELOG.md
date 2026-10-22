@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.5.0 — work-in-progress checkpoint
+
+Partial code published for continued development. Known issues: STATUS.md.
+
 ## 1.4.0 — work-in-progress checkpoint
 
 Partial code published for continued development. Known issues: STATUS.md.
@@ -7,6 +11,12 @@ Partial code published for continued development. Known issues: STATUS.md.
 ## 1.3.0 — 2026-10-15
 
 ### Added
+- Webhook delivery history and monitoring dashboard:
+  - `GET /api/webhooks/deliveries` endpoint for paginated delivery attempts across all webhooks with filtering by webhook, success status, and date range.
+  - `GET /api/webhooks/{webhook_id}/deliveries` endpoint for delivery history of a specific webhook.
+  - `WebhookService.get_webhook_deliveries()` and `get_webhook_deliveries_by_webhook()` methods querying the audit log.
+  - Extended `WebhookManager` UI with "View Delivery History" navigation, delivery attempt table with status badges, pagination, and error detail display.
+  - Backend test coverage in `test_webhook_deliveries.py` (10 tests) and frontend test coverage in `WebhookManager.test.tsx` (7 tests).
 - Webhook dispatch service (`WebhookService`) with configurable HTTPS endpoints, HMAC-SHA256 signed payloads, event filtering, and exponential backoff retries (up to 5 attempts with jitter).
 - Webhook configuration API (`POST/GET/PATCH/DELETE /api/webhooks`) for admin users to manage dispatch targets with secrets, event filters, and retry limits.
 - Automatic webhook dispatch on action approval (`action.approved` event) delivering signed approval payload and receipt token to all matching enabled webhooks.
@@ -17,6 +27,7 @@ Partial code published for continued development. Known issues: STATUS.md.
 ### Fixed
 - Backend advisor router registration restored after import cleanup.
 - Frontend Navbar and App routing updated to include Webhook Dispatch tab.
+
 ## [1.2.0] - 2026-10-09
 
 ## [1.1.0] - 2026-10-07

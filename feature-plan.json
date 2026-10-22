@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "current_feature": "audit-trail-timeline",
+  "current_feature": "webhook-delivery-history",
   "features": [
     {
       "id": "action-queue-risk-scoring",
@@ -121,6 +121,29 @@
       "tests": [
         "backend/tests/test_actions_and_reviews.py",
         "frontend/src/test/App.test.tsx"
+      ]
+    },
+    {
+      "id": "webhook-delivery-history",
+      "title": "Webhook delivery history and monitoring dashboard",
+      "status": "done",
+      "acceptance": [
+        "GET /api/webhooks/{webhook_id}/deliveries returns paginated dispatch attempts with status, timestamps, error details",
+        "GET /api/webhooks/deliveries returns paginated dispatch attempts across all webhooks with filtering by webhook, status, date range",
+        "WebhookManager component displays delivery history table with status badges, retry counts, and error details",
+        "Delivery records include attempt number, status code, error message, timestamp, and action/receipt references"
+      ],
+      "implementation": [
+        "backend/app/api/routes_webhooks.py",
+        "backend/app/services/webhook_service.py",
+        "backend/app/models/schemas.py",
+        "frontend/src/components/WebhookManager.tsx",
+        "frontend/src/services/apiClient.ts",
+        "frontend/src/types/api.ts"
+      ],
+      "tests": [
+        "backend/tests/test_webhook_deliveries.py",
+        "frontend/src/test/WebhookManager.test.tsx"
       ]
     }
   ]

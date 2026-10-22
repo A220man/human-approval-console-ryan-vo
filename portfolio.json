@@ -9,7 +9,8 @@
     "Queue and inspect proposed autonomous agent actions with automated blast-radius analysis and deterministic policy enforcement",
     "Conduct role-based review with mandatory decision rationale, payload edits that are re-scored before approval, and grounded LLM advisory explanations",
     "Generate, verify, and export tamper-evident SHA-256 HMAC-signed approval receipts forming a verifiable audit chain",
-    "Configure HTTPS webhook endpoints for automated dispatch of signed approval payloads with exponential backoff retries and audit logging"
+    "Configure HTTPS webhook endpoints for automated dispatch of signed approval payloads with exponential backoff retries and audit logging",
+    "Monitor webhook delivery history with paginated attempt logs, status filtering, and error details"
   ],
   "auth": "oidc-keycloak-saml-broker",
   "llm_providers": [
@@ -18,6 +19,6 @@
     "gemini",
     "ollama"
   ],
-  "version": "1.3.0",
+  "version": "1.4.0",
   "status": "work-in-progress"
 }
