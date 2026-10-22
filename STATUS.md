@@ -2,11 +2,11 @@
 
 Work in progress; not a release-readiness or successful QA claim.
 
-Version: 1.4.0
+Version: 1.5.0
 
 ## Outstanding findings
 
-No completed independent review for this checkpoint.
+No new checkpoint changes; retry development next round
 
 ## Next round
 

@@ -181,3 +181,24 @@ class EvaluationMetrics(BaseModel):
     critical_false_negative_rate: float
     confusion_matrix: Dict[str, int]
     breakdown_by_category: Dict[str, Dict[str, Any]]
+class WebhookDeliveryResponse(BaseModel):
+    """Single webhook delivery attempt record."""
+    id: str
+    webhook_id: str
+    webhook_name: str
+    action_id: str
+    receipt_id: str
+    event_type: str
+    attempt: int
+    success: bool
+    status_code: Optional[int] = None
+    error: Optional[str] = None
+    created_at: str
+
+
+class WebhookDeliveriesListResponse(BaseModel):
+    """Paginated list of webhook delivery attempts."""
+    total: int
+    limit: int
+    offset: int
+    items: List[WebhookDeliveryResponse]

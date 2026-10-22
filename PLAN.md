@@ -4,7 +4,7 @@ Each round completes one feature or repair. Future items are planned, not implem
 
 ## Current round
 
-audit-trail-timeline
+webhook-delivery-history
 
 ## Roadmap
 
@@ -84,4 +84,18 @@ Acceptance:
 Implementation: `backend/app/api/routes_webhooks.py`, `backend/app/services/webhook_service.py`, `backend/app/core/database.py`, `backend/app/main.py`, `backend/app/api/routes_reviews.py`, `frontend/src/components/WebhookManager.tsx`, `frontend/src/services/apiClient.ts`, `frontend/src/types/api.ts`, `frontend/src/components/Navbar.tsx`, `frontend/src/App.tsx`
 
 Tests: `backend/tests/test_actions_and_reviews.py`, `frontend/src/test/App.test.tsx`
+
+### webhook-delivery-history — Webhook delivery history and monitoring dashboard
+
+Status: done
+
+Acceptance:
+- GET /api/webhooks/{webhook_id}/deliveries returns paginated dispatch attempts with status, timestamps, error details
+- GET /api/webhooks/deliveries returns paginated dispatch attempts across all webhooks with filtering by webhook, status, date range
+- WebhookManager component displays delivery history table with status badges, retry counts, and error details
+- Delivery records include attempt number, status code, error message, timestamp, and action/receipt references
+
+Implementation: `backend/app/api/routes_webhooks.py`, `backend/app/services/webhook_service.py`, `backend/app/models/schemas.py`, `frontend/src/components/WebhookManager.tsx`, `frontend/src/services/apiClient.ts`, `frontend/src/types/api.ts`
+
+Tests: `backend/tests/test_webhook_deliveries.py`, `frontend/src/test/WebhookManager.test.tsx`
 

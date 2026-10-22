@@ -204,3 +204,23 @@ export interface WebhookTestResult {
   status_code?: number;
   error?: string;
 }
+export interface WebhookDelivery {
+  id: string;
+  webhook_id: string;
+  webhook_name: string;
+  action_id: string;
+  receipt_id: string;
+  event_type: string;
+  attempt: number;
+  success: boolean;
+  status_code: number | null;
+  error: string | null;
+  created_at: string;
+}
+
+export interface WebhookDeliveriesListResponse {
+  total: number;
+  limit: number;
+  offset: number;
+  items: WebhookDelivery[];
+}

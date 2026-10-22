@@ -2,7 +2,8 @@ import {
   ActionItem, ActionListResponse, AdvisoryResponse, AuditLogEntry,
   BenchmarkAction, ChainVerifyResult, EvaluationMetrics, PolicyItem,
   ReceiptItem, ReceiptVerifyResult, UserProfile,
-  Webhook, WebhookListResponse, WebhookCreateRequest, WebhookUpdateRequest, WebhookTestResult
+  Webhook, WebhookListResponse, WebhookCreateRequest, WebhookUpdateRequest, WebhookTestResult,
+  WebhookDeliveriesListResponse
 } from '../types/api';
 
 class ApiClient {
@@ -86,6 +87,24 @@ class ApiClient {
   updateWebhook = (id: string, body: WebhookUpdateRequest) => this.request<Webhook>(`/api/webhooks/${id}`, { method: 'PATCH', body: JSON.stringify(body) });
   deleteWebhook = (id: string) => this.request(`/api/webhooks/${id}`, { method: 'DELETE' });
   testWebhook = (id: string) => this.request<WebhookTestResult>(`/api/webhooks/${id}/test`, { method: 'POST' });
+  getWebhookDeliveries = (params: {
+    webhook_id?: string;
+    success?: boolean;
+    limit?: number;
+    offset?: number;
+    since?: string;
+    until?: string;
+  } = {}) => {
+    const qs = new URLSearchParams(
+      Object.entries(params)
+        .filter(([_, v]) => v !== undefined && v !== '')
+        .map(([k, v]) => [k, String(v)])
+    ).toString();
+    return this.request<WebhookDeliveriesListResponse>(`/api/webhooks/deliveries${qs ? `?${qs}` : ''}`);
+  };
+
+  getWebhookDeliveriesByWebhook = (webhookId: string, limit = 50, offset = 0) =>
+    this.request<WebhookDeliveriesListResponse>(`/api/webhooks/${webhookId}/deliveries?limit=${limit}&offset=${offset}`);
 }
 
 export const api = new ApiClient();
