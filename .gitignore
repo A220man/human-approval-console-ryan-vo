@@ -30,3 +30,4 @@ dist-ssr/
 .idea/
 *.swp
 *.swo
+venv/

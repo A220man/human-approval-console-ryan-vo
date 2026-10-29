@@ -89,6 +89,22 @@ export const WebhookManager: React.FC<{ user: UserProfile }> = ({ user }) => {
     const webhookId = selectedWebhook?.id;
     loadDeliveries(webhookId, limit, offset);
   };
+  const handleRetryDelivery = async (deliveryId: string) => {
+    setDeliveriesError(null);
+    try {
+      const result = await api.retryWebhookDelivery(deliveryId);
+      if (result.success) {
+        // Refresh the delivery list to show the new attempt
+        const webhookId = selectedWebhook?.id;
+        loadDeliveries(webhookId, deliveriesPagination.limit, deliveriesPagination.offset);
+      } else {
+        setDeliveriesError(result.reason || 'Retry failed');
+      }
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { detail?: string } }; message?: string };
+      setDeliveriesError(error.response?.data?.detail || error.message || 'Failed to retry delivery');
+    }
+  };
 
   useEffect(() => {
     loadWebhooks();
@@ -240,6 +256,7 @@ export const WebhookManager: React.FC<{ user: UserProfile }> = ({ user }) => {
                       <th style={{ width: '150px' }}>Action / Receipt</th>
                       <th style={{ width: '180px' }}>Time (UTC)</th>
                       <th style={{ width: '250px' }}>Details</th>
+                      <th style={{ width: '100px' }}>Action</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -267,6 +284,18 @@ export const WebhookManager: React.FC<{ user: UserProfile }> = ({ user }) => {
                             <span style={{ color: '#fca5a5', fontFamily: 'monospace', fontSize: '0.75rem' }}>
                               {d.error.length > 80 ? d.error.slice(0, 80) + '…' : d.error}
                             </span>
+                          )}
+                        </td>
+                        <td>
+                          {!d.success && (
+                            <button
+                              className="btn btn-outline"
+                              style={{ fontSize: '0.75rem', padding: '0.25rem 0.5rem' }}
+                              onClick={() => handleRetryDelivery(d.id)}
+                              disabled={deliveriesLoading}
+                            >
+                              Retry
+                            </button>
                           )}
                         </td>
                       </tr>

@@ -176,10 +176,13 @@ class WebhookService:
         attempt: int
     ) -> None:
         """Log webhook dispatch attempt to audit log."""
+        webhook = cls.get_webhook_by_id(webhook_id)
+        webhook_name = webhook.get("name", "") if webhook else ""
         audit_id = f"audit-{uuid.uuid4().hex[:12]}"
         now_iso = datetime.now(timezone.utc).isoformat()
         details = {
             "webhook_id": webhook_id,
+            "webhook_name": webhook_name,
             "action_id": action_id,
             "receipt_id": receipt_id,
             "event_type": event_type,
@@ -403,3 +406,49 @@ class WebhookService:
     ) -> Dict[str, Any]:
         """Get delivery attempts for a specific webhook."""
         return cls.get_webhook_deliveries(webhook_id=webhook_id, limit=limit, offset=offset)
+
+    @classmethod
+    async def retry_delivery(
+        cls,
+        delivery_id: str,
+        user_id: str
+    ) -> Dict[str, Any]:
+        """Retry a failed webhook delivery by looking up the original action and receipt."""
+        # Find the delivery record in audit logs
+        conn = get_connection()
+        row = conn.execute(
+            "SELECT id, action_id, actor_id, actor_role, event_type, details_json, created_at FROM audit_logs WHERE id = ? AND event_type = 'WEBHOOK_DISPATCH'",
+            (delivery_id,)
+        ).fetchone()
+        
+        if not row:
+            return {"success": False, "reason": "Delivery record not found"}
+        
+        details = json.loads(row["details_json"]) if row["details_json"] else {}
+        webhook_id = details.get("webhook_id")
+        action_id = row["action_id"]
+        receipt_id = details.get("receipt_id")
+        event_type = details.get("event_type", "action.approved")
+        
+        if not webhook_id:
+            return {"success": False, "reason": "Webhook ID not found in delivery record"}
+        
+        # Get the webhook
+        webhook = cls.get_webhook_by_id(webhook_id)
+        if not webhook or not webhook["enabled"]:
+            return {"success": False, "reason": "Webhook not found or disabled"}
+        
+        # Get the original action
+        action_row = conn.execute("SELECT * FROM actions WHERE id = ?", (action_id,)).fetchone()
+        if not action_row:
+            return {"success": False, "reason": "Original action not found"}
+        action = dict(action_row)
+        
+        # Get the original receipt
+        receipt_row = conn.execute("SELECT * FROM receipts WHERE id = ?", (receipt_id,)).fetchone()
+        if not receipt_row:
+            return {"success": False, "reason": "Original receipt not found"}
+        receipt = dict(receipt_row)
+        
+        # Dispatch the webhook again
+        return await cls.dispatch_webhook(webhook_id, action, receipt, event_type)

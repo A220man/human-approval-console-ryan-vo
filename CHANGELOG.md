@@ -1,8 +1,22 @@
 # Changelog
 
-## 1.5.0 — work-in-progress checkpoint
+## 1.6.0 — work-in-progress checkpoint
 
 Partial code published for continued development. Known issues: STATUS.md.
+
+## 1.6.0 — 2026-10-29
+
+### Fixed
+- Webhook delivery history now includes webhook name in audit log details for easier identification of delivery sources.
+
+### Added
+- Manual retry capability for failed webhook deliveries:
+  - New `POST /api/webhooks/deliveries/{delivery_id}/retry` endpoint (admin only) to retry a failed delivery by looking up the original action and receipt
+  - `WebhookService.retry_delivery()` method handling retry logic with full audit logging
+  - `retryWebhookDelivery()` method in frontend API client
+  - Retry button in WebhookManager delivery table for failed deliveries (only shown when `success === false`)
+
+## 1.5.0 — work-in-progress checkpoint
 
 ## 1.4.0 — work-in-progress checkpoint
 
