@@ -200,3 +200,15 @@ async def test_webhook(
 
     result = await WebhookService.dispatch_webhook(webhook_id, test_action, test_receipt, "webhook.test")
     return result
+@router.post("/deliveries/{delivery_id}/retry", response_model=Dict[str, Any])
+async def retry_delivery(
+    delivery_id: str,
+    user: UserProfile = Depends(require_role(["admin"]))
+) -> Dict[str, Any]:
+    """Retry a failed webhook delivery by delivery ID (admin only)."""
+    result = await WebhookService.retry_delivery(delivery_id, user.user_id)
+    if not result.get("success") and result.get("reason") == "Delivery record not found":
+        raise HTTPException(status_code=404, detail="Delivery record not found.")
+    if not result.get("success") and result.get("reason") in ("Webhook not found or disabled", "Original action not found", "Original receipt not found"):
+        raise HTTPException(status_code=404, detail=result["reason"])
+    return result

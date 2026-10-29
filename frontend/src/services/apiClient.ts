@@ -105,6 +105,8 @@ class ApiClient {
 
   getWebhookDeliveriesByWebhook = (webhookId: string, limit = 50, offset = 0) =>
     this.request<WebhookDeliveriesListResponse>(`/api/webhooks/${webhookId}/deliveries?limit=${limit}&offset=${offset}`);
+  retryWebhookDelivery = (deliveryId: string) =>
+    this.request<WebhookTestResult>(`/api/webhooks/deliveries/${deliveryId}/retry`, { method: 'POST' });
 }
 
 export const api = new ApiClient();
