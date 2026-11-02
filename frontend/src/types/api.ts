@@ -199,6 +199,8 @@ export interface WebhookUpdateRequest {
 }
 
 export interface WebhookTestResult {
+  attempts?: number;
+  reason?: string;
   success: boolean;
   attempt?: number;
   status_code?: number;

@@ -1,8 +1,16 @@
 # Changelog
 
+## 1.7.0 — work-in-progress checkpoint
+
+Partial code published for continued development. Known issues: STATUS.md.
+
 ## 1.6.0 — work-in-progress checkpoint
 
 Partial code published for continued development. Known issues: STATUS.md.
+
+### Fixed
+- WebhookManager delivery history view: added missing `deliveriesPagination` state variable to fix ReferenceError when rendering pagination controls
+- TypeScript type `WebhookTestResult` extended with `reason` and `attempts` fields to match backend retry endpoint response
 
 ## 1.6.0 — 2026-10-29
 
