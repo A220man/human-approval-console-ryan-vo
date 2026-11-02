@@ -15,6 +15,12 @@ interface WebhookFormData {
 
 type ViewMode = 'list' | 'deliveries';
 
+interface DeliveryFilters {
+  success?: boolean;
+  since?: string;
+  until?: string;
+}
+
 export const WebhookManager: React.FC<{ user: UserProfile }> = ({ user }) => {
   const [webhooks, setWebhooks] = useState<Webhook[]>([]);
   const [loading, setLoading] = useState(true);
@@ -27,7 +33,8 @@ export const WebhookManager: React.FC<{ user: UserProfile }> = ({ user }) => {
   const [deliveries, setDeliveries] = useState<WebhookDelivery[]>([]);
   const [deliveriesLoading, setDeliveriesLoading] = useState(false);
   const [deliveriesError, setDeliveriesError] = useState<string | null>(null);
-  const [deliveriesPagination, setDeliveriesPagination] = useState({ total: 0, limit: 50, offset: 0 });
+  const [deliveryFilters, setDeliveryFilters] = useState<DeliveryFilters>({});
+  const [deliveriesPagination, setDeliveriesPagination] = useState<{ total: number; limit: number; offset: number } | null>(null);
 
   const [formData, setFormData] = useState<WebhookFormData>({
     name: '',
@@ -44,8 +51,9 @@ export const WebhookManager: React.FC<{ user: UserProfile }> = ({ user }) => {
       setError(null);
       const res = await api.getWebhooks();
       setWebhooks(res.items);
-    } catch (err: any) {
-      setError(err.message || 'Failed to load webhooks');
+    } catch (err: unknown) {
+      const error = err as Error;
+      setError(error.message || 'Failed to load webhooks');
     } finally {
       setLoading(false);
     }
@@ -55,19 +63,28 @@ export const WebhookManager: React.FC<{ user: UserProfile }> = ({ user }) => {
     try {
       setDeliveriesLoading(true);
       setDeliveriesError(null);
-      if (webhookId) {
-        const res = await api.getWebhookDeliveriesByWebhook(webhookId, limit, offset);
+      const params = {
+        limit,
+        offset,
+        ...(selectedWebhook || webhookId ? { webhook_id: selectedWebhook?.id || webhookId } : {}),
+        ...(deliveryFilters.success !== undefined ? { success: deliveryFilters.success } : {}),
+        ...(deliveryFilters.since ? { since: deliveryFilters.since } : {}),
+        ...(deliveryFilters.until ? { until: deliveryFilters.until } : {}),
+      };
+      if (selectedWebhook || webhookId) {
+        const res = await api.getWebhookDeliveriesByWebhook(selectedWebhook?.id || webhookId!, limit, offset);
         setDeliveries(res.items);
         setDeliveriesPagination({ total: res.total, limit: res.limit, offset: res.offset });
-        setSelectedWebhook(webhooks.find(w => w.id === webhookId) || null);
+        setSelectedWebhook(webhooks.find(w => w.id === (selectedWebhook?.id || webhookId)) || null);
       } else {
-        const res = await api.getWebhookDeliveries({ limit, offset });
+        const res = await api.getWebhookDeliveries(params);
         setDeliveries(res.items);
         setDeliveriesPagination({ total: res.total, limit: res.limit, offset: res.offset });
         setSelectedWebhook(null);
       }
-    } catch (err: any) {
-      setDeliveriesError(err.message || 'Failed to load delivery history');
+    } catch (err: unknown) {
+      const error = err as Error;
+      setDeliveriesError(error.message || 'Failed to load delivery history');
     } finally {
       setDeliveriesLoading(false);
     }
@@ -75,6 +92,7 @@ export const WebhookManager: React.FC<{ user: UserProfile }> = ({ user }) => {
 
   const handleViewDeliveries = (webhook?: Webhook) => {
     setViewMode('deliveries');
+    setDeliveryFilters({});
     loadDeliveries(webhook?.id);
   };
 
@@ -82,10 +100,11 @@ export const WebhookManager: React.FC<{ user: UserProfile }> = ({ user }) => {
     setViewMode('list');
     setSelectedWebhook(null);
     setDeliveries([]);
+    setDeliveryFilters({});
   };
 
   const handleDeliveriesPageChange = (offset: number) => {
-    const limit = deliveriesPagination.limit;
+    const limit = deliveriesPagination?.limit || 50;
     const webhookId = selectedWebhook?.id;
     loadDeliveries(webhookId, limit, offset);
   };
@@ -96,7 +115,7 @@ export const WebhookManager: React.FC<{ user: UserProfile }> = ({ user }) => {
       if (result.success) {
         // Refresh the delivery list to show the new attempt
         const webhookId = selectedWebhook?.id;
-        loadDeliveries(webhookId, deliveriesPagination.limit, deliveriesPagination.offset);
+        loadDeliveries(webhookId, deliveriesPagination?.limit || 50, deliveriesPagination?.offset || 0);
       } else {
         setDeliveriesError(result.reason || 'Retry failed');
       }
@@ -132,8 +151,9 @@ export const WebhookManager: React.FC<{ user: UserProfile }> = ({ user }) => {
       setShowCreateModal(false);
       setEditingWebhook(null);
       loadWebhooks();
-    } catch (err: any) {
-      alert(err.message || 'Failed to save webhook');
+    } catch (err: unknown) {
+      const error = err as Error;
+      alert(error.message || 'Failed to save webhook');
     } finally {
       setSubmitting(false);
     }
@@ -157,8 +177,9 @@ export const WebhookManager: React.FC<{ user: UserProfile }> = ({ user }) => {
     try {
       await api.deleteWebhook(webhook.id);
       loadWebhooks();
-    } catch (err: any) {
-      alert(err.message || 'Failed to delete webhook');
+    } catch (err: unknown) {
+      const error = err as Error;
+      alert(error.message || 'Failed to delete webhook');
     }
   };
 
@@ -170,8 +191,9 @@ export const WebhookManager: React.FC<{ user: UserProfile }> = ({ user }) => {
       if (viewMode === 'deliveries' && selectedWebhook?.id === webhook.id) {
         loadDeliveries(webhook.id);
       }
-    } catch (err: any) {
-      alert(err.message || 'Test failed');
+    } catch (err: unknown) {
+      const error = err as Error;
+      alert(error.message || 'Test failed');
     }
   };
 
@@ -224,6 +246,60 @@ export const WebhookManager: React.FC<{ user: UserProfile }> = ({ user }) => {
               Delivery History
               {selectedWebhook && <span style={{ fontWeight: 400, fontSize: '1rem', color: '#9ca3af' }}> — {selectedWebhook.name}</span>}
             </h2>
+          </div>
+        </div>
+        <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'flex-end', flexWrap: 'wrap', marginBottom: '1rem', padding: '1rem', background: '#f9fafb', borderRadius: '6px', border: '1px solid #e5e7eb' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+            <label style={{ fontSize: '0.75rem', fontWeight: 600, color: '#374151' }}>Status</label>
+            <select
+              value={deliveryFilters.success !== undefined ? String(deliveryFilters.success) : ''}
+              onChange={(e) => setDeliveryFilters(prev => ({ ...prev, success: e.target.value === '' ? undefined : e.target.value === 'true' }))}
+              style={{ padding: '0.375rem 0.75rem', fontSize: '0.8125rem', border: '1px solid #d1d5db', borderRadius: '4px', background: 'white', minWidth: '120px' }}
+            >
+              <option value="">All</option>
+              <option value="true">Success</option>
+              <option value="false">Failed</option>
+            </select>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+            <label style={{ fontSize: '0.75rem', fontWeight: 600, color: '#374151' }}>From</label>
+            <input
+              type="datetime-local"
+              value={deliveryFilters.since || ''}
+              onChange={(e) => setDeliveryFilters(prev => ({ ...prev, since: e.target.value || undefined }))}
+              style={{ padding: '0.375rem 0.75rem', fontSize: '0.8125rem', border: '1px solid #d1d5db', borderRadius: '4px', background: 'white', minWidth: '180px' }}
+            />
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+            <label style={{ fontSize: '0.75rem', fontWeight: 600, color: '#374151' }}>To</label>
+            <input
+              type="datetime-local"
+              value={deliveryFilters.until || ''}
+              onChange={(e) => setDeliveryFilters(prev => ({ ...prev, until: e.target.value || undefined }))}
+              style={{ padding: '0.375rem 0.75rem', fontSize: '0.8125rem', border: '1px solid #d1d5db', borderRadius: '4px', background: 'white', minWidth: '180px' }}
+            />
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+            <label style={{ fontSize: '0.75rem', fontWeight: 600, color: '#374151', visibility: 'hidden' }}>Apply</label>
+            <button
+              className="btn btn-primary"
+              onClick={() => loadDeliveries(selectedWebhook?.id, deliveriesPagination?.limit || 50, 0)}
+              disabled={deliveriesLoading}
+              style={{ padding: '0.375rem 1rem', fontSize: '0.8125rem' }}
+            >
+              Apply
+            </button>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+            <label style={{ fontSize: '0.75rem', fontWeight: 600, color: '#374151', visibility: 'hidden' }}>Clear</label>
+            <button
+              className="btn btn-outline"
+              onClick={() => { setDeliveryFilters({}); loadDeliveries(selectedWebhook?.id, deliveriesPagination?.limit || 50, 0); }}
+              disabled={deliveriesLoading}
+              style={{ padding: '0.375rem 1rem', fontSize: '0.8125rem' }}
+            >
+              Clear
+            </button>
           </div>
         </div>
 
@@ -306,18 +382,18 @@ export const WebhookManager: React.FC<{ user: UserProfile }> = ({ user }) => {
               <div style={{ display: 'flex', justifyContent: 'center', gap: '0.5rem', marginTop: '1rem', flexWrap: 'wrap' }}>
                 <button
                   className="btn btn-outline"
-                  onClick={() => handleDeliveriesPageChange(Math.max(0, deliveriesPagination.offset - deliveriesPagination.limit))}
-                  disabled={deliveriesPagination.offset === 0}
+                  onClick={() => handleDeliveriesPageChange(Math.max(0, (deliveriesPagination?.offset || 0) - (deliveriesPagination?.limit || 50)))}
+                  disabled={(deliveriesPagination?.offset || 0) === 0}
                 >
                   Previous
                 </button>
                 <span style={{ display: 'flex', alignItems: 'center', color: '#9ca3af', fontSize: '0.875rem' }}>
-                  Showing {deliveriesPagination.offset + 1}–{Math.min(deliveriesPagination.offset + deliveries.length, deliveriesPagination.total)} of {deliveriesPagination.total}
+                  Showing {(deliveriesPagination?.offset || 0) + 1}–{Math.min((deliveriesPagination?.offset || 0) + deliveries.length, deliveriesPagination?.total || 0)} of {deliveriesPagination?.total || 0}
                 </span>
                 <button
                   className="btn btn-outline"
-                  onClick={() => handleDeliveriesPageChange(deliveriesPagination.offset + deliveriesPagination.limit)}
-                  disabled={deliveriesPagination.offset + deliveriesPagination.limit >= deliveriesPagination.total}
+                  onClick={() => handleDeliveriesPageChange((deliveriesPagination?.offset || 0) + (deliveriesPagination?.limit || 50))}
+                  disabled={(deliveriesPagination?.offset || 0) + (deliveriesPagination?.limit || 50) >= (deliveriesPagination?.total || 0)}
                 >
                   Next
                 </button>
