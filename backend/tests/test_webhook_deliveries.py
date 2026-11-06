@@ -199,3 +199,68 @@ def test_webhook_deliveries_invalid_params(admin_client):
     # Negative offset
     resp = admin_client.get("/api/webhooks/deliveries", params={"offset": -1})
     assert resp.status_code == 422
+def test_webhook_deliveries_filter_by_success_for_specific_webhook(admin_client):
+    """Verifies filtering deliveries by success status for a specific webhook."""
+    # Create a webhook
+    wh = admin_client.post("/api/webhooks", json={
+        "name": "Filter Test Webhook",
+        "url": "https://example.com/filter-test",
+        "secret": "secret",
+        "enabled": True,
+        "max_retries": 1
+    }).json()
+    webhook_id = wh["id"]
+
+    # Dispatch test to create delivery records
+    admin_client.post(f"/api/webhooks/{webhook_id}/test")
+
+    # Filter by success=true for specific webhook
+    resp = admin_client.get(f"/api/webhooks/{webhook_id}/deliveries", params={"success": True})
+    assert resp.status_code == 200
+    data = resp.json()
+    for item in data["items"]:
+        assert item["success"] is True
+        assert item["webhook_id"] == webhook_id
+
+    # Filter by success=false for specific webhook
+    resp = admin_client.get(f"/api/webhooks/{webhook_id}/deliveries", params={"success": False})
+    assert resp.status_code == 200
+    data = resp.json()
+    for item in data["items"]:
+        assert item["success"] is False
+        assert item["webhook_id"] == webhook_id
+
+
+def test_webhook_deliveries_date_filter_for_specific_webhook(admin_client):
+    """Verifies filtering deliveries by date range for a specific webhook."""
+    # Create a webhook
+    wh = admin_client.post("/api/webhooks", json={
+        "name": "Date Filter Test Webhook",
+        "url": "https://example.com/date-filter-test",
+        "secret": "secret",
+        "enabled": True,
+        "max_retries": 1
+    }).json()
+    webhook_id = wh["id"]
+
+    # Dispatch test to create delivery records
+    admin_client.post(f"/api/webhooks/{webhook_id}/test")
+
+    # Filter by since for specific webhook
+    from datetime import datetime, timedelta, timezone
+    since = (datetime.now(timezone.utc) - timedelta(hours=1)).isoformat()
+    resp = admin_client.get(f"/api/webhooks/{webhook_id}/deliveries", params={"since": since})
+    assert resp.status_code == 200
+    data = resp.json()
+    for item in data["items"]:
+        assert item["created_at"] >= since
+        assert item["webhook_id"] == webhook_id
+
+    # Filter by until for specific webhook
+    until = (datetime.now(timezone.utc) + timedelta(hours=1)).isoformat()
+    resp = admin_client.get(f"/api/webhooks/{webhook_id}/deliveries", params={"until": until})
+    assert resp.status_code == 200
+    data = resp.json()
+    for item in data["items"]:
+        assert item["created_at"] <= until
+        assert item["webhook_id"] == webhook_id

@@ -103,8 +103,13 @@ class ApiClient {
     return this.request<WebhookDeliveriesListResponse>(`/api/webhooks/deliveries${qs ? `?${qs}` : ''}`);
   };
 
-  getWebhookDeliveriesByWebhook = (webhookId: string, limit = 50, offset = 0) =>
-    this.request<WebhookDeliveriesListResponse>(`/api/webhooks/${webhookId}/deliveries?limit=${limit}&offset=${offset}`);
+  getWebhookDeliveriesByWebhook = (webhookId: string, limit = 50, offset = 0, filters?: { success?: boolean; since?: string; until?: string }) => {
+    const params = new URLSearchParams({ limit: String(limit), offset: String(offset) });
+    if (filters?.success !== undefined) params.append('success', String(filters.success));
+    if (filters?.since) params.append('since', filters.since);
+    if (filters?.until) params.append('until', filters.until);
+    return this.request<WebhookDeliveriesListResponse>(`/api/webhooks/${webhookId}/deliveries?${params.toString()}`);
+  };
   retryWebhookDelivery = (deliveryId: string) =>
     this.request<WebhookTestResult>(`/api/webhooks/deliveries/${deliveryId}/retry`, { method: 'POST' });
 }

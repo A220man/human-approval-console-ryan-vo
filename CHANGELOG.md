@@ -1,6 +1,14 @@
 # Changelog
 
+## 1.8.0 — work-in-progress checkpoint
+
+Partial code published for continued development. Known issues: STATUS.md.
+
 ## 1.7.0 — work-in-progress checkpoint
+
+### Fixed
+- Webhook delivery history filtering now works for specific webhook endpoints (`GET /api/webhooks/{webhook_id}/deliveries`): success status, date range (since/until) filters are now supported when viewing deliveries for a single webhook, matching the capabilities of the global deliveries endpoint.
+- Frontend `WebhookManager` delivery history view now correctly applies filters when inspecting a specific webhook's delivery attempts.
 
 Partial code published for continued development. Known issues: STATUS.md.
 

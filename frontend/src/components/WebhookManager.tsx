@@ -63,20 +63,23 @@ export const WebhookManager: React.FC<{ user: UserProfile }> = ({ user }) => {
     try {
       setDeliveriesLoading(true);
       setDeliveriesError(null);
-      const params = {
-        limit,
-        offset,
-        ...(selectedWebhook || webhookId ? { webhook_id: selectedWebhook?.id || webhookId } : {}),
+      const filters = {
         ...(deliveryFilters.success !== undefined ? { success: deliveryFilters.success } : {}),
         ...(deliveryFilters.since ? { since: deliveryFilters.since } : {}),
         ...(deliveryFilters.until ? { until: deliveryFilters.until } : {}),
       };
       if (selectedWebhook || webhookId) {
-        const res = await api.getWebhookDeliveriesByWebhook(selectedWebhook?.id || webhookId!, limit, offset);
+        const res = await api.getWebhookDeliveriesByWebhook(selectedWebhook?.id || webhookId!, limit, offset, filters);
         setDeliveries(res.items);
         setDeliveriesPagination({ total: res.total, limit: res.limit, offset: res.offset });
         setSelectedWebhook(webhooks.find(w => w.id === (selectedWebhook?.id || webhookId)) || null);
       } else {
+        const params = {
+          limit,
+          offset,
+          webhook_id: webhookId,
+          ...filters,
+        };
         const res = await api.getWebhookDeliveries(params);
         setDeliveries(res.items);
         setDeliveriesPagination({ total: res.total, limit: res.limit, offset: res.offset });
