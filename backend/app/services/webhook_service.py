@@ -402,10 +402,13 @@ class WebhookService:
         cls,
         webhook_id: str,
         limit: int = 50,
-        offset: int = 0
+        offset: int = 0,
+        success: Optional[bool] = None,
+        since: Optional[str] = None,
+        until: Optional[str] = None
     ) -> Dict[str, Any]:
         """Get delivery attempts for a specific webhook."""
-        return cls.get_webhook_deliveries(webhook_id=webhook_id, limit=limit, offset=offset)
+        return cls.get_webhook_deliveries(webhook_id=webhook_id, limit=limit, offset=offset, success=success, since=since, until=until)
 
     @classmethod
     async def retry_delivery(

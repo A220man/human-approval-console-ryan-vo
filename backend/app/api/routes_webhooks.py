@@ -107,8 +107,11 @@ def list_webhook_deliveries(
 @router.get("/{webhook_id}/deliveries", response_model=WebhookDeliveriesListResponse)
 def list_webhook_deliveries_by_webhook(
     webhook_id: str,
+    success: Optional[bool] = Query(None),
     limit: int = Query(50, ge=1, le=100),
     offset: int = Query(0, ge=0),
+    since: Optional[str] = Query(None),
+    until: Optional[str] = Query(None),
     user: UserProfile = Depends(require_role(["viewer", "analyst", "admin"]))
 ) -> WebhookDeliveriesListResponse:
     """List delivery attempts for a specific webhook."""
@@ -120,6 +123,9 @@ def list_webhook_deliveries_by_webhook(
         webhook_id=webhook_id,
         limit=limit,
         offset=offset,
+        success=success,
+        since=since,
+        until=until,
     )
     return WebhookDeliveriesListResponse(**result)
 

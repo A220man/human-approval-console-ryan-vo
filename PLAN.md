@@ -90,9 +90,9 @@ Tests: `backend/tests/test_actions_and_reviews.py`, `frontend/src/test/App.test.
 Status: done
 
 Acceptance:
-- GET /api/webhooks/{webhook_id}/deliveries returns paginated dispatch attempts with status, timestamps, error details
+- GET /api/webhooks/{webhook_id}/deliveries returns paginated dispatch attempts with status, timestamps, error details, and supports filtering by success status and date range
 - GET /api/webhooks/deliveries returns paginated dispatch attempts across all webhooks with filtering by webhook, status, date range
-- WebhookManager component displays delivery history table with status badges, retry counts, and error details
+- WebhookManager component displays delivery history table with status badges, retry counts, and error details; filters apply correctly for both global and per-webhook views
 - Delivery records include attempt number, status code, error message, timestamp, and action/receipt references
 
 Implementation: `backend/app/api/routes_webhooks.py`, `backend/app/services/webhook_service.py`, `backend/app/models/schemas.py`, `frontend/src/components/WebhookManager.tsx`, `frontend/src/services/apiClient.ts`, `frontend/src/types/api.ts`
