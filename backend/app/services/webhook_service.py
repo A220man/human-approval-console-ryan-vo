@@ -396,7 +396,99 @@ class WebhookService:
             })
         
         return {"total": total, "limit": limit, "offset": offset, "items": items}
-
+    @classmethod
+    def get_webhook_delivery_stats(
+        cls,
+        webhook_id: Optional[str] = None,
+        since: Optional[str] = None,
+        until: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """Get aggregate webhook delivery statistics."""
+        conn = get_connection()
+        
+        base_query = """
+            FROM audit_logs 
+            WHERE event_type = 'WEBHOOK_DISPATCH'
+        """
+        params = []
+        
+        if webhook_id:
+            base_query += " AND json_extract(details_json, '$.webhook_id') = ?"
+            params.append(webhook_id)
+        
+        if since:
+            base_query += " AND created_at >= ?"
+            params.append(since)
+        
+        if until:
+            base_query += " AND created_at <= ?"
+            params.append(until)
+        
+        # Get all deliveries for stats calculation
+        query = f"""
+            SELECT id, action_id, actor_id, actor_role, event_type, details_json, created_at
+            {base_query}
+            ORDER BY created_at
+        """
+        rows = conn.execute(query, params).fetchall()
+        
+        if not rows:
+            return {
+                "webhook_id": webhook_id,
+                "webhook_name": None,
+                "total_deliveries": 0,
+                "successful_deliveries": 0,
+                "failed_deliveries": 0,
+                "success_rate": 0.0,
+                "unique_actions": 0,
+                "unique_receipts": 0,
+                "event_types": {},
+                "avg_attempts_per_delivery": 0.0,
+                "date_range": {"earliest": None, "latest": None}
+            }
+        
+        total = len(rows)
+        successful = 0
+        unique_actions = set()
+        unique_receipts = set()
+        event_types = {}
+        attempts = []
+        dates = []
+        webhook_name = None
+        
+        for row in rows:
+            details = json.loads(row["details_json"]) if row["details_json"] else {}
+            if details.get("success"):
+                successful += 1
+            unique_actions.add(row["action_id"])
+            unique_receipts.add(details.get("receipt_id", ""))
+            event_type = details.get("event_type", "unknown")
+            event_types[event_type] = event_types.get(event_type, 0) + 1
+            attempts.append(details.get("attempt", 1))
+            dates.append(row["created_at"])
+            if webhook_name is None and details.get("webhook_name"):
+                webhook_name = details.get("webhook_name")
+        
+        failed = total - successful
+        success_rate = (successful / total * 100) if total > 0 else 0.0
+        avg_attempts = sum(attempts) / len(attempts) if attempts else 0.0
+        
+        return {
+            "webhook_id": webhook_id,
+            "webhook_name": webhook_name,
+            "total_deliveries": total,
+            "successful_deliveries": successful,
+            "failed_deliveries": failed,
+            "success_rate": round(success_rate, 2),
+            "unique_actions": len(unique_actions),
+            "unique_receipts": len(unique_receipts),
+            "event_types": event_types,
+            "avg_attempts_per_delivery": round(avg_attempts, 2),
+            "date_range": {
+                "earliest": min(dates) if dates else None,
+                "latest": max(dates) if dates else None
+            }
+        }
     @classmethod
     def get_webhook_deliveries_by_webhook(
         cls,

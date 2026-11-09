@@ -220,6 +220,23 @@ export interface WebhookDelivery {
   created_at: string;
 }
 
+export interface WebhookDeliveryStats {
+  webhook_id: string | null;
+  webhook_name: string | null;
+  total_deliveries: number;
+  successful_deliveries: number;
+  failed_deliveries: number;
+  success_rate: number;
+  unique_actions: number;
+  unique_receipts: number;
+  event_types: Record<string, number>;
+  avg_attempts_per_delivery: number;
+  date_range: {
+    earliest: string | null;
+    latest: string | null;
+  };
+}
+
 export interface WebhookDeliveriesListResponse {
   total: number;
   limit: number;
