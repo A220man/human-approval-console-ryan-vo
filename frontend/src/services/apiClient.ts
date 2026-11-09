@@ -112,6 +112,24 @@ class ApiClient {
   };
   retryWebhookDelivery = (deliveryId: string) =>
     this.request<WebhookTestResult>(`/api/webhooks/deliveries/${deliveryId}/retry`, { method: 'POST' });
+  getWebhookDeliveryStats = (params: {
+    webhook_id?: string;
+    since?: string;
+    until?: string;
+  } = {}) => {
+    const qs = new URLSearchParams(
+      Object.entries(params)
+        .filter(([_, v]) => v !== undefined && v !== '')
+        .map(([k, v]) => [k, String(v)])
+    ).toString();
+    return this.request<WebhookDeliveryStats>(`/api/webhooks/deliveries/stats${qs ? `?${qs}` : ''}`);
+  };
+  getWebhookDeliveryStatsByWebhook = (webhookId: string, params?: { since?: string; until?: string }) => {
+    const qs = new URLSearchParams();
+    if (params?.since) qs.append('since', params.since);
+    if (params?.until) qs.append('until', params.until);
+    return this.request<WebhookDeliveryStats>(`/api/webhooks/${webhookId}/deliveries/stats${qs.toString() ? `?${qs.toString()}` : ''}`);
+  };
 }
 
 export const api = new ApiClient();

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { UserProfile, Webhook, WebhookDelivery } from '../types/api';
+import { UserProfile, Webhook, WebhookDelivery, WebhookDeliveryStats } from '../types/api';
 import { api } from '../services/apiClient';
 
 const EVENT_TYPES = ['action.approved', 'action.rejected', 'webhook.test'] as const;
@@ -35,6 +35,7 @@ export const WebhookManager: React.FC<{ user: UserProfile }> = ({ user }) => {
   const [deliveriesError, setDeliveriesError] = useState<string | null>(null);
   const [deliveryFilters, setDeliveryFilters] = useState<DeliveryFilters>({});
   const [deliveriesPagination, setDeliveriesPagination] = useState<{ total: number; limit: number; offset: number } | null>(null);
+  const [deliveryStats, setDeliveryStats] = useState<WebhookDeliveryStats | null>(null);
 
   const [formData, setFormData] = useState<WebhookFormData>({
     name: '',
@@ -91,13 +92,28 @@ export const WebhookManager: React.FC<{ user: UserProfile }> = ({ user }) => {
     } finally {
       setDeliveriesLoading(false);
     }
+  const loadStats = async (webhookId?: string) => {
+    try {
+      if (selectedWebhook || webhookId) {
+        const res = await api.getWebhookDeliveryStatsByWebhook(selectedWebhook?.id || webhookId!, { since: deliveryFilters.since, until: deliveryFilters.until });
+        setDeliveryStats(res);
+      } else {
+        const res = await api.getWebhookDeliveryStats({ webhook_id: webhookId, since: deliveryFilters.since, until: deliveryFilters.until });
+        setDeliveryStats(res);
+      }
+    } catch (err: unknown) {
+      // Silently fail stats loading
+      setDeliveryStats(null);
+    }
   };
 
-  const handleViewDeliveries = (webhook?: Webhook) => {
-    setViewMode('deliveries');
-    setDeliveryFilters({});
-    loadDeliveries(webhook?.id);
-  };
+   const handleViewDeliveries = (webhook?: Webhook) => {
+     setViewMode('deliveries');
+     setDeliveryFilters({});
+     loadDeliveries(webhook?.id);
+     loadStats(webhook?.id);
+   };
+
 
   const handleBackToList = () => {
     setViewMode('list');
@@ -119,6 +135,7 @@ export const WebhookManager: React.FC<{ user: UserProfile }> = ({ user }) => {
         // Refresh the delivery list to show the new attempt
         const webhookId = selectedWebhook?.id;
         loadDeliveries(webhookId, deliveriesPagination?.limit || 50, deliveriesPagination?.offset || 0);
+        loadStats(webhookId);
       } else {
         setDeliveriesError(result.reason || 'Retry failed');
       }
@@ -286,7 +303,7 @@ export const WebhookManager: React.FC<{ user: UserProfile }> = ({ user }) => {
             <label style={{ fontSize: '0.75rem', fontWeight: 600, color: '#374151', visibility: 'hidden' }}>Apply</label>
             <button
               className="btn btn-primary"
-              onClick={() => loadDeliveries(selectedWebhook?.id, deliveriesPagination?.limit || 50, 0)}
+              onClick={() => { loadDeliveries(selectedWebhook?.id, deliveriesPagination?.limit || 50, 0); loadStats(selectedWebhook?.id); }}
               disabled={deliveriesLoading}
               style={{ padding: '0.375rem 1rem', fontSize: '0.8125rem' }}
             >
@@ -297,7 +314,7 @@ export const WebhookManager: React.FC<{ user: UserProfile }> = ({ user }) => {
             <label style={{ fontSize: '0.75rem', fontWeight: 600, color: '#374151', visibility: 'hidden' }}>Clear</label>
             <button
               className="btn btn-outline"
-              onClick={() => { setDeliveryFilters({}); loadDeliveries(selectedWebhook?.id, deliveriesPagination?.limit || 50, 0); }}
+              onClick={() => { setDeliveryFilters({}); loadDeliveries(selectedWebhook?.id, deliveriesPagination?.limit || 50, 0); loadStats(selectedWebhook?.id); }}
               disabled={deliveriesLoading}
               style={{ padding: '0.375rem 1rem', fontSize: '0.8125rem' }}
             >

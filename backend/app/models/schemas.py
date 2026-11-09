@@ -195,7 +195,19 @@ class WebhookDeliveryResponse(BaseModel):
     error: Optional[str] = None
     created_at: str
 
-
+class WebhookDeliveryStats(BaseModel):
+    """Aggregate webhook delivery statistics."""
+    webhook_id: Optional[str] = None
+    webhook_name: Optional[str] = None
+    total_deliveries: int = 0
+    successful_deliveries: int = 0
+    failed_deliveries: int = 0
+    success_rate: float = 0.0
+    unique_actions: int = 0
+    unique_receipts: int = 0
+    event_types: Dict[str, int] = {}
+    avg_attempts_per_delivery: float = 0.0
+    date_range: Dict[str, Optional[str]] = {"earliest": None, "latest": None}
 class WebhookDeliveriesListResponse(BaseModel):
     """Paginated list of webhook delivery attempts."""
     total: int

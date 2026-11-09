@@ -6,7 +6,7 @@ from pydantic import BaseModel, Field, HttpUrl
 
 from app.core.auth import require_role
 from app.core.database import get_connection
-from app.models.schemas import UserProfile, WebhookDeliveryResponse, WebhookDeliveriesListResponse
+from app.models.schemas import UserProfile, WebhookDeliveryResponse, WebhookDeliveriesListResponse, WebhookDeliveryStats
 from app.services.webhook_service import WebhookService
 
 router = APIRouter(prefix="/api/webhooks", tags=["Webhooks"])
@@ -104,6 +104,72 @@ def list_webhook_deliveries(
     return WebhookDeliveriesListResponse(**result)
 
 
+# Delivery stats endpoints - must come before /{webhook_id}/deliveries to avoid path parameter conflicts
+@router.get("/deliveries/stats", response_model=WebhookDeliveryStats)
+def get_webhook_delivery_stats(
+    webhook_id: Optional[str] = Query(None),
+    since: Optional[str] = Query(None),
+    until: Optional[str] = Query(None),
+    user: UserProfile = Depends(require_role(["viewer", "analyst", "admin"]))
+) -> WebhookDeliveryStats:
+    """Get aggregate webhook delivery statistics."""
+    # If webhook_id provided, verify it exists
+    if webhook_id:
+        webhook = WebhookService.get_webhook_by_id(webhook_id)
+        if not webhook:
+            raise HTTPException(status_code=404, detail="Webhook not found.")
+    
+    result = WebhookService.get_webhook_delivery_stats(
+        webhook_id=webhook_id,
+        since=since,
+        until=until,
+    )
+    return WebhookDeliveryStats(**result)
+
+
+@router.get("/{webhook_id}/deliveries/stats", response_model=WebhookDeliveryStats)
+def get_webhook_delivery_stats_by_webhook(
+    webhook_id: str,
+    since: Optional[str] = Query(None),
+    until: Optional[str] = Query(None),
+    user: UserProfile = Depends(require_role(["viewer", "analyst", "admin"]))
+) -> WebhookDeliveryStats:
+    """Get aggregate delivery statistics for a specific webhook."""
+    webhook = WebhookService.get_webhook_by_id(webhook_id)
+    if not webhook:
+        raise HTTPException(status_code=404, detail="Webhook not found.")
+    
+    result = WebhookService.get_webhook_delivery_stats(
+        webhook_id=webhook_id,
+        since=since,
+        until=until,
+    )
+    return WebhookDeliveryStats(**result)
+
+
+# Delivery history endpoints - must come before /{webhook_id} to avoid path parameter conflicts
+@router.get("/deliveries", response_model=WebhookDeliveriesListResponse)
+def list_webhook_deliveries(
+    webhook_id: Optional[str] = Query(None),
+    success: Optional[bool] = Query(None),
+    limit: int = Query(50, ge=1, le=100),
+    offset: int = Query(0, ge=0),
+    since: Optional[str] = Query(None),
+    until: Optional[str] = Query(None),
+    user: UserProfile = Depends(require_role(["viewer", "analyst", "admin"]))
+) -> WebhookDeliveriesListResponse:
+    """List webhook delivery attempts across all webhooks with filtering."""
+    result = WebhookService.get_webhook_deliveries(
+        webhook_id=webhook_id,
+        success=success,
+        limit=limit,
+        offset=offset,
+        since=since,
+        until=until,
+    )
+    return WebhookDeliveriesListResponse(**result)
+
+
 @router.get("/{webhook_id}/deliveries", response_model=WebhookDeliveriesListResponse)
 def list_webhook_deliveries_by_webhook(
     webhook_id: str,
@@ -118,7 +184,7 @@ def list_webhook_deliveries_by_webhook(
     webhook = WebhookService.get_webhook_by_id(webhook_id)
     if not webhook:
         raise HTTPException(status_code=404, detail="Webhook not found.")
-
+    
     result = WebhookService.get_webhook_deliveries_by_webhook(
         webhook_id=webhook_id,
         limit=limit,
@@ -128,7 +194,6 @@ def list_webhook_deliveries_by_webhook(
         until=until,
     )
     return WebhookDeliveriesListResponse(**result)
-
 
 @router.get("/{webhook_id}", response_model=WebhookResponse)
 def get_webhook(
