@@ -280,6 +280,6 @@ async def retry_delivery(
     result = await WebhookService.retry_delivery(delivery_id, user.user_id)
     if not result.get("success") and result.get("reason") == "Delivery record not found":
         raise HTTPException(status_code=404, detail="Delivery record not found.")
-    if not result.get("success") and result.get("reason") in ("Webhook not found or disabled", "Original action not found", "Original receipt not found"):
+    if not result.get("success") and result.get("reason") in ("Webhook not found or disabled", "Webhook ID not found in delivery record", "Original action not found", "Original receipt not found"):
         raise HTTPException(status_code=404, detail=result["reason"])
     return result
