@@ -2,11 +2,11 @@
 
 Work in progress; not a release-readiness or successful QA claim.
 
-Version: 1.10.0
+Version: 1.11.0
 
 ## Outstanding findings
 
-No completed independent review for this checkpoint.
+Repair this preserved checkpoint. Previous failure: No new checkpoint changes after bounded retry; defer this target after repeated failures
 
 ## Next round
 
