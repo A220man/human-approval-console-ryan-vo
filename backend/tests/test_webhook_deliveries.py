@@ -152,10 +152,7 @@ def test_webhook_deliveries_requires_auth(analyst_client):
     # This should work for analyst
     resp = analyst_client.get("/api/webhooks/deliveries")
     assert resp.status_code == 200
-
-    # Viewer should also work
-    from tests.conftest import viewer_client
-    # Note: viewer_client fixture would be needed
+    # Viewer should also work\    resp = viewer_client.get("/api/webhooks/deliveries")\    assert resp.status_code == 200
 
 
 def test_webhook_deliveries_date_filter(admin_client):
