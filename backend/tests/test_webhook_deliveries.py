@@ -261,3 +261,30 @@ def test_webhook_deliveries_date_filter_for_specific_webhook(admin_client):
     for item in data["items"]:
         assert item["created_at"] <= until
         assert item["webhook_id"] == webhook_id
+
+def test_webhook_deliveries_since_after_until(admin_client):
+    """Verifies that filtering with since after until returns empty results."""
+    # Create a webhook
+    wh = admin_client.post("/api/webhooks", json={
+        "name": "Since/Until Edge Test Webhook",
+        "url": "https://example.com/webhook",
+        "secret": "secret",
+        "enabled": True,
+        "max_retries": 1
+    }).json()
+
+    # Dispatch test to create delivery records
+    admin_client.post(f"/api/webhooks/{wh['id']}/test")
+
+    # Filter with since after until should return empty results
+    from datetime import datetime, timedelta, timezone
+    since = (datetime.now(timezone.utc) + timedelta(hours=1)).isoformat()  # Future
+    until = (datetime.now(timezone.utc) - timedelta(hours=1)).isoformat()  # Past
+    resp = admin_client.get(f"/api/webhooks/{wh['id']}/deliveries", params={"since": since, "until": until})
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["total"] == 0
+    assert data["items"] == []
+
+
+# End of file tests

@@ -364,6 +364,11 @@ class WebhookService:
             base_query += " AND created_at <= ?"
             params.append(until)
         
+        # Ensure date range is valid: since must be <= until
+        if since and until and since > until:
+            # Return empty result since no timestamps can satisfy both conditions
+            return {"total": 0, "limit": limit, "offset": offset, "items": []}
+
         # Count total
         count_query = "SELECT COUNT(*) " + base_query
         total = conn.execute(count_query, params).fetchone()[0]
